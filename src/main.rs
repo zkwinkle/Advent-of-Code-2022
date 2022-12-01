@@ -14,9 +14,13 @@ fn main() {
 
     let (res1, res2) = match args.day {
         1 => (day1::task1(data()), day1::task2(data())),
+        26.. => {
+            eprintln!("Day {} out of range (max 25)", args.day);
+            return
+        }
         _ => {
-            eprintln!("No solution available for given day!");
-            return;
+            eprintln!("No solution available for day {}!", args.day);
+            return
         }
     };
 

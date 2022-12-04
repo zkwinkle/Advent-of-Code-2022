@@ -6,6 +6,7 @@ use std::{
 use clap::Parser;
 
 mod day1;
+mod day2;
 
 fn main() {
     let args = Args::parse();
@@ -14,13 +15,14 @@ fn main() {
 
     let (res1, res2) = match args.day {
         1 => (day1::task1(data()), day1::task2(data())),
+        2 => (day2::task1(data()), day2::task2(data())),
         26.. => {
             eprintln!("Day {} out of range (max 25)", args.day);
-            return
+            return;
         }
         _ => {
             eprintln!("No solution available for day {}!", args.day);
-            return
+            return;
         }
     };
 

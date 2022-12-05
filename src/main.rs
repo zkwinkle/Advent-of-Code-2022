@@ -21,6 +21,7 @@ fn main() {
         1 => (day1::task1(data()), day1::task2(data())),
         2 => (day2::task1(data()), day2::task2(data())),
         3 => (day3::task1(data()), day3::task2(data())),
+        4 => (day4::task1(data()), day4::task2(data())),
         26.. => {
             eprintln!("Day {} out of range (max 25)", args.day);
             return;

@@ -1,3 +1,5 @@
+#![feature(iter_array_chunks)]
+
 use std::{
     fs::File,
     io::{BufRead, BufReader},
@@ -35,13 +37,10 @@ fn main() {
 /// Will load a text file into lines which must be under `/src/dayXY/input.txt`
 /// or `/src/dayXY/testInput.txt` depending on `load_test`
 fn load_data(day: usize, load_test: bool) -> impl Iterator<Item = String> {
-    let file_name = if load_test == false {
-        "input"
-    } else {
-        "testinput"
-    };
+    let file_name = if load_test { "testinput" } else { "input" };
     let file_name = format!("./src/day{}/{}.txt", day, file_name);
-    let f = File::open(&file_name).expect(&format!("Couldn't open input file {}", file_name));
+    let f =
+        File::open(&file_name).unwrap_or_else(|_| panic!("Couldn't open input file {}", file_name));
     let reader = BufReader::new(f);
 
     reader

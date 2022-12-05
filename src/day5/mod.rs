@@ -46,13 +46,12 @@ pub fn task1(mut lines: impl Iterator<Item = String>) -> String {
 
     stacks
         .into_iter()
-        .map(|stack| stack.last().unwrap().clone())
+        .map(|stack| *stack.last().unwrap())
         .collect()
 }
 
 pub fn task2(mut lines: impl Iterator<Item = String>) -> String {
     let mut stacks: Vec<Vec<char>> = init_crates(&mut lines);
-    println!("Current stacks: {:?}", stacks);
 
     for line in lines {
         let instructions: Vec<usize> = line
@@ -61,6 +60,8 @@ pub fn task2(mut lines: impl Iterator<Item = String>) -> String {
             .collect();
 
         let ammt = instructions[0];
+
+        // Getting the specific stacks using split_at_mut is a bit clunky
         let (from, to) = if instructions[1] < instructions[2] {
             let (first_half, second_half) = stacks.split_at_mut(instructions[2] - 1);
             (
@@ -76,11 +77,11 @@ pub fn task2(mut lines: impl Iterator<Item = String>) -> String {
         };
 
         let moved_blocks = from.drain(from.len() - ammt..from.len());
-        to.extend_from_slice(moved_blocks.as_slice());
+        to.extend(moved_blocks);
     }
 
     stacks
         .into_iter()
-        .map(|stack| stack.last().unwrap().clone())
+        .map(|stack| *stack.last().unwrap())
         .collect()
 }

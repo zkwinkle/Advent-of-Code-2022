@@ -1,9 +1,11 @@
 #![feature(iter_array_chunks)]
+#![feature(iter_next_chunk)]
 
 use std::{
     fs::File,
     io::{BufRead, BufReader},
 };
+use std::fmt::Debug;
 
 use clap::Parser;
 
@@ -11,17 +13,19 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 fn main() {
     let args = Args::parse();
 
     let data = || load_data(args.day, args.test);
 
-    let (res1, res2) = match args.day {
-        1 => (day1::task1(data()), day1::task2(data())),
-        2 => (day2::task1(data()), day2::task2(data())),
-        3 => (day3::task1(data()), day3::task2(data())),
-        4 => (day4::task1(data()), day4::task2(data())),
+    let (res1, res2): (Box<dyn Debug>, Box<dyn Debug>) = match args.day {
+        1 => (Box::new(day1::task1(data())), Box::new(day1::task2(data()))),
+        2 => (Box::new(day2::task1(data())), Box::new(day2::task2(data()))),
+        3 => (Box::new(day3::task1(data())), Box::new(day3::task2(data()))),
+        4 => (Box::new(day4::task1(data())), Box::new(day4::task2(data()))),
+        5 => (Box::new(day5::task1(data())), Box::new(day5::task2(data()))),
         26.. => {
             eprintln!("Day {} out of range (max 25)", args.day);
             return;

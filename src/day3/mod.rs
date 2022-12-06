@@ -37,12 +37,7 @@ fn find_badge(lines: &[String; 3]) -> char {
 pub fn task2(lines: impl Iterator<Item = String>) -> i32 {
     lines.array_chunks::<3>().fold(0, |acc, ref lines| {
         let repeat_char = find_badge(lines);
-        println!(
-            "Repeat char found in lines {:?}: '{}'\tValue:{}",
-            &lines,
-            repeat_char,
-            get_priority(repeat_char)
-        );
+        //println!( "Repeat char found in lines {:?}: '{}'\tValue:{}", &lines, repeat_char, get_priority(repeat_char));
         acc + get_priority(repeat_char)
     })
 }

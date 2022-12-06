@@ -8,8 +8,8 @@ pub fn task1(input: &str) -> SolutionResult {
         line.windows(4)
             .position(|slice| {
                 slice
-                    .iter()
-                    .find(|&&c1| slice.iter().filter(|&&c2| c1 != c2).count() <= 2)
+                    .iter().enumerate()
+                    .find(|(i, &c1)| slice[i+1..].iter().any(|&c2| c1 == c2))
                     .is_none()
             })
             .unwrap()
@@ -25,8 +25,8 @@ pub fn task2(input: &str) -> SolutionResult {
         line.windows(14)
             .position(|slice| {
                 slice
-                    .iter()
-                    .find(|&&c1| slice.iter().filter(|&&c2| c1 != c2).count() <= 12)
+                    .iter().enumerate()
+                    .find(|(i, &c1)| slice[i+1..].iter().any(|&c2| c1 == c2))
                     .is_none()
             })
             .unwrap()

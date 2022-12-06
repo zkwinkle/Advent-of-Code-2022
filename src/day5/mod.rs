@@ -1,4 +1,4 @@
-fn init_crates(lines: &mut impl Iterator<Item = String>) -> Vec<Vec<char>> {
+fn init_crates(lines: &mut impl Iterator<Item = &str>) -> Vec<Vec<char>> {
     let mut lines_peek = lines.peekable();
     let length = (lines_peek.peek().unwrap().chars().count() + 1) / 4;
     let mut stacks: Vec<Vec<char>> = vec![Vec::new(); length];
@@ -26,7 +26,8 @@ fn init_crates(lines: &mut impl Iterator<Item = String>) -> Vec<Vec<char>> {
     stacks
 }
 
-pub fn task1(mut lines: impl Iterator<Item = String>) -> String {
+pub fn task1(input: &str) -> String {
+    let mut lines = input.lines();
     let mut stacks: Vec<Vec<char>> = init_crates(&mut lines);
 
     for line in lines {
@@ -50,7 +51,8 @@ pub fn task1(mut lines: impl Iterator<Item = String>) -> String {
         .collect()
 }
 
-pub fn task2(mut lines: impl Iterator<Item = String>) -> String {
+pub fn task2(input: &str) -> String {
+    let mut lines = input.lines();
     let mut stacks: Vec<Vec<char>> = init_crates(&mut lines);
 
     for line in lines {

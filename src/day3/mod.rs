@@ -15,8 +15,8 @@ fn get_priority(c: char) -> i32 {
     }
 }
 
-pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
-    lines.fold(0, |acc, line| {
+pub fn task1(input: &str) -> i32 {
+    input.lines().fold(0, |acc, line| {
         let length = line.chars().count();
         let repeat_char = find_repeat(line.chars().take(length / 2), line.chars().skip(length / 2));
         //println!("Repeat char found in line {}: '{}'\tValue:{}",line,repeat_char, get_priority(repeat_char));
@@ -24,7 +24,7 @@ pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
     })
 }
 
-fn find_badge(lines: &[String; 3]) -> char {
+fn find_badge(lines: &[&str; 3]) -> char {
     lines[0]
         .chars()
         .find(|&c1| {
@@ -34,10 +34,13 @@ fn find_badge(lines: &[String; 3]) -> char {
         .unwrap()
 }
 
-pub fn task2(lines: impl Iterator<Item = String>) -> i32 {
-    lines.array_chunks::<3>().fold(0, |acc, ref lines| {
-        let repeat_char = find_badge(lines);
-        //println!( "Repeat char found in lines {:?}: '{}'\tValue:{}", &lines, repeat_char, get_priority(repeat_char));
-        acc + get_priority(repeat_char)
-    })
+pub fn task2(input: &str) -> i32 {
+    input
+        .lines()
+        .array_chunks::<3>()
+        .fold(0, |acc, ref lines| {
+            let repeat_char = find_badge(lines);
+            //println!( "Repeat char found in lines {:?}: '{}'\tValue:{}", &lines, repeat_char, get_priority(repeat_char));
+            acc + get_priority(repeat_char)
+        })
 }

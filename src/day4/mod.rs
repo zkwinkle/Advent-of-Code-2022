@@ -34,8 +34,8 @@ impl FromStr for Range {
     }
 }
 
-pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
-    lines.fold(0, |acc, line| {
+pub fn task1(input: &str) -> i32 {
+    input.lines().fold(0, |acc, line| {
         let ranges: (&str, &str) = line.split_once(',').unwrap();
         let ranges: (Range, Range) = (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
 
@@ -47,8 +47,8 @@ pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
     })
 }
 
-pub fn task2(lines: impl Iterator<Item = String>) -> i32 {
-    lines.fold(0, |acc, line| {
+pub fn task2(input: &str) -> i32 {
+    input.lines().fold(0, |acc, line| {
         let ranges: (&str, &str) = line.split_once(',').unwrap();
         let ranges: (Range, Range) = (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
 

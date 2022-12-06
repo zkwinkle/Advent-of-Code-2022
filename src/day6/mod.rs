@@ -1,4 +1,5 @@
-pub fn task1(mut lines: impl Iterator<Item = String>) -> usize {
+pub fn task1(input: &str) -> usize {
+    let mut lines = input.lines();
     let line: Vec<char> = lines.next().unwrap().chars().collect();
 
     line.windows(4)
@@ -12,7 +13,8 @@ pub fn task1(mut lines: impl Iterator<Item = String>) -> usize {
         + 4
 }
 
-pub fn task2(mut lines: impl Iterator<Item = String>) -> usize {
+pub fn task2(input: &str) -> usize {
+    let mut lines = input.lines();
     let line: Vec<char> = lines.next().unwrap().chars().collect();
 
     line.windows(14)

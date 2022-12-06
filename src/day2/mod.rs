@@ -73,22 +73,26 @@ impl Tool {
 // lose = 0pt
 // draw = 3pt
 // win  = 6pt
-pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
+pub fn task1(input: &str) -> i32 {
     // Tuple (current_sum, max_found)
-    lines.fold(0, |score, line| {
-        let mut letters = line.trim().chars();
-        let other = Tool::from_char(letters.next().unwrap());
-        let my = Tool::from_char(letters.last().unwrap());
-        score + my.fight(other)
-    })
+    input
+        .lines()
+        .fold(0, |score, line| {
+            let mut letters = line.trim().chars();
+            let other = Tool::from_char(letters.next().unwrap());
+            let my = Tool::from_char(letters.last().unwrap());
+            score + my.fight(other)
+        })
 }
 
-pub fn task2(lines: impl Iterator<Item = String>) -> i32 {
+pub fn task2(input: &str) -> i32 {
     // Tuple (current_sum, elves_calories_vec)
-    lines.fold(0, |score, line| {
-        let mut letters = line.trim().chars();
-        let (other, my) =
-            Tool::from_chars_task2((letters.next().unwrap(), letters.last().unwrap()));
-        score + my.fight(other)
-    })
+    input
+        .lines()
+        .fold(0, |score, line| {
+            let mut letters = line.trim().chars();
+            let (other, my) =
+                Tool::from_chars_task2((letters.next().unwrap(), letters.last().unwrap()));
+            score + my.fight(other)
+        })
 }

@@ -1,5 +1,6 @@
 #![feature(iter_array_chunks)]
 #![feature(iter_next_chunk)]
+#![feature(anonymous_lifetime_in_impl_trait)]
 #![feature(bench_black_box)]
 
 use clap::Parser;
@@ -7,10 +8,8 @@ use colored::Colorize;
 use seq_macro::seq;
 use std::{
     fmt::Debug,
-    fs::File,
     hint::black_box,
-    io::{BufRead, BufReader},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 mod day1;
@@ -33,10 +32,25 @@ macro_rules! solutions {
     };
 }
 
+macro_rules! inputs {
+    ($max_day:expr) => {
+            seq!(N in 1..=$max_day {
+            [
+            #(
+                    [
+             include_str!(concat!("day", N, "/input.txt")),
+             include_str!(concat!("day", N, "/testinput.txt")),
+                    ]
+            ,)*
+        ]
+            })
+    };
+}
+
 // change max day here
 const MAX_DAY: usize = 6;
-const SOLUTIONS: [[fn(Box<dyn Iterator<Item = String>>) -> Box<dyn Debug>; 2]; MAX_DAY] =
-    solutions!(6); // and here!
+const SOLUTIONS: [[fn(&str) -> Box<dyn Debug>; 2]; MAX_DAY] = solutions!(6); // and here!
+const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(6); // and here!
 
 fn main() {
     let args = Args::parse();
@@ -48,33 +62,25 @@ fn main() {
                 format!("WARNING").yellow().bold()
             );
         }
-        let now = Instant::now();
-        #[allow(unused_must_use)]
-        for _ in 0..5000 {
-            black_box(load_data(1, false));
-        }
-        let elapsed = now.elapsed();
-        println!(
-            "{}: {}",
-            format!("Loading data").bold(),
-            format!("{:>10?}", elapsed / 5000).green(),
-        );
 
+        let mut elapsed_total: Duration = Default::default();
         for (i, [f1, f2]) in SOLUTIONS.iter().enumerate() {
             let day = i + 1;
+            let data = || load_data(day, false);
+
             // Warm up cache
             for _ in 0..1000 {
-                black_box(f1(load_data(day, false)));
+                black_box(f1(data()));
             }
 
             let now = Instant::now();
             for _ in 0..5000 {
-                black_box(f1(load_data(day, false)));
+                black_box(f1(data()));
             }
             let elapsed1 = now.elapsed();
             let now = Instant::now();
             for _ in 0..5000 {
-                black_box(f2(load_data(day, false)));
+                black_box(f2(data()));
             }
             let elapsed2 = now.elapsed();
             println!(
@@ -84,7 +90,14 @@ fn main() {
                 format!("day{day:02}/task2").bold(),
                 format!("{:>10?}", elapsed2 / 5000).green(),
             );
+
+            elapsed_total += elapsed1 + elapsed2;
         }
+        println!(
+            "\n{}: {}",
+            format!("Total").bold(),
+            format!("{:>10?}", elapsed_total / 5000).green()
+        );
     } else {
         let day = match args.day {
             Some(day) => day,
@@ -115,18 +128,8 @@ fn main() {
 
 /// Will load a text file into lines which must be under `/src/dayXY/input.txt`
 /// or `/src/dayXY/testInput.txt` depending on `load_test`
-fn load_data(day: usize, load_test: bool) -> Box<dyn Iterator<Item = String>> {
-    let file_name = if load_test { "testinput" } else { "input" };
-    let file_name = format!("./src/day{}/{}.txt", day, file_name);
-    let f =
-        File::open(&file_name).unwrap_or_else(|_| panic!("Couldn't open input file {}", file_name));
-    let reader = BufReader::new(f);
-
-    Box::new(
-        reader
-            .lines()
-            .map(|line_res| line_res.expect("IO Error reading input file")),
-    )
+fn load_data(day: usize, load_test: bool) -> &'static str {
+    return INPUTS[day - 1][load_test as usize];
 }
 
 /// Advent of Code 2022 solutions in Rust

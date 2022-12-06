@@ -1,6 +1,7 @@
-pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
+pub fn task1(input: &str) -> i32 {
     // Tuple (current_sum, max_found)
-    lines
+    input
+        .lines()
         .fold((0, 0), |mut tuple, line| {
             if let Ok(i) = line.parse::<i32>() {
                 tuple.0 += i;
@@ -15,9 +16,10 @@ pub fn task1(lines: impl Iterator<Item = String>) -> i32 {
         .1
 }
 
-pub fn task2(lines: impl Iterator<Item = String>) -> i32 {
+pub fn task2(input: &str) -> i32 {
     // Tuple (current_sum, elves_calories_vec)
-    let mut sums: Vec<i32> = lines
+    let mut sums: Vec<i32> = input
+        .lines()
         .fold((0, vec![0]), |mut tuple, line| {
             if let Ok(i) = line.parse::<i32>() {
                 *(tuple.1.last_mut().unwrap()) += i;

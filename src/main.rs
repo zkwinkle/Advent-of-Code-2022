@@ -31,8 +31,15 @@ const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(6); // and here!
 fn main() {
     let args = Args::parse();
 
-    if args.bench {
-        benchmarks()
+    if let Some(passes_opt) = args.bench {
+        let passes = {
+            if let Some(passes) = passes_opt {
+                passes
+            } else {
+                1000 // Default amount of passes if unsepcified
+            }
+        };
+        benchmarks(passes)
     } else {
         let day = match args.day {
             Some(day) => day,
@@ -61,7 +68,7 @@ fn main() {
     }
 }
 
-fn benchmarks() {
+fn benchmarks(passes: u32) {
     if cfg!(debug_assertions) {
         eprintln!("{}: Benchmarking in debug build", "WARNING".yellow().bold());
     }
@@ -71,27 +78,22 @@ fn benchmarks() {
         let day = i + 1;
         let data = || load_data(day, false);
 
-        // Warm up cache
-        for _ in 0..1000 {
-            black_box(f1(data()));
-        }
-
         let now = Instant::now();
-        for _ in 0..5000 {
+        for _ in 0..passes {
             black_box(f1(data()));
         }
         let elapsed1 = now.elapsed();
         let now = Instant::now();
-        for _ in 0..5000 {
+        for _ in 0..passes {
             black_box(f2(data()));
         }
         let elapsed2 = now.elapsed();
         println!(
             "\n{}: {}\n{}: {}",
             format!("day{day:02}/task1").bold(),
-            format!("{:>10?}", elapsed1 / 5000).green(),
+            format!("{:>10?}", elapsed1 / passes).green(),
             format!("day{day:02}/task2").bold(),
-            format!("{:>10?}", elapsed2 / 5000).green(),
+            format!("{:>10?}", elapsed2 / passes).green(),
         );
 
         elapsed_total += elapsed1 + elapsed2;
@@ -99,7 +101,7 @@ fn benchmarks() {
     println!(
         "\n{}: {}",
         "Total".bold(),
-        format!("{:>10?}", elapsed_total / 5000).green()
+        format!("{:>10?}", elapsed_total / passes).green()
     );
 }
 
@@ -120,5 +122,5 @@ struct Args {
     day: Option<usize>,
 
     #[clap(long)]
-    bench: bool,
+    bench: Option<Option<u32>>,
 }

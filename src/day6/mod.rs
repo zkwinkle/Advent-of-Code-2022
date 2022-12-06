@@ -9,7 +9,7 @@ pub fn task1(input: &str) -> SolutionResult {
             .position(|slice| {
                 slice
                     .iter().enumerate()
-                    .find(|(i, &c1)| slice[i+1..].iter().any(|&c2| c1 == c2))
+                    .find(|(i, c1)| slice[i+1..].contains(c1))
                     .is_none()
             })
             .unwrap()
@@ -26,7 +26,7 @@ pub fn task2(input: &str) -> SolutionResult {
             .position(|slice| {
                 slice
                     .iter().enumerate()
-                    .find(|(i, &c1)| slice[i+1..].iter().any(|&c2| c1 == c2))
+                    .find(|(i, c1)| slice[i+1..].contains(c1))
                     .is_none()
             })
             .unwrap()

@@ -29,15 +29,16 @@ macro_rules! solutions {
     };
 }
 
+const SOLUTIONS: [[fn(Box<dyn Iterator<Item = String>>) -> Box<dyn Debug>; 2]; 6] = solutions!(6);
+
 fn main() {
     let args = Args::parse();
-    let solutions: [[fn(Box<dyn Iterator<Item = String>>) -> Box<dyn Debug>; 2]; 6] = solutions!(6);
 
     let data = || load_data(args.day, args.test);
     let (res1, res2): (Box<dyn Debug>, Box<dyn Debug>) = match args.day {
         day @ 1..=6 => {
             let day = day - 1;
-            (solutions[day][0](data()), solutions[day][1](data()))
+            (SOLUTIONS[day][0](data()), SOLUTIONS[day][1](data()))
         }
         26.. => {
             eprintln!("Day {} out of range (max 25)", args.day);

@@ -14,6 +14,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 fn main() {
     let args = Args::parse();
@@ -26,6 +27,7 @@ fn main() {
         3 => (Box::new(day3::task1(data())), Box::new(day3::task2(data()))),
         4 => (Box::new(day4::task1(data())), Box::new(day4::task2(data()))),
         5 => (Box::new(day5::task1(data())), Box::new(day5::task2(data()))),
+        6 => (Box::new(day6::task1(data())), Box::new(day6::task2(data()))),
         26.. => {
             eprintln!("Day {} out of range (max 25)", args.day);
             return;

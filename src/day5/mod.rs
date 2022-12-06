@@ -1,3 +1,5 @@
+use crate::tooling::SolutionResult;
+
 fn init_crates(lines: &mut impl Iterator<Item = &str>) -> Vec<Vec<char>> {
     let mut lines_peek = lines.peekable();
     let length = (lines_peek.peek().unwrap().chars().count() + 1) / 4;
@@ -26,7 +28,7 @@ fn init_crates(lines: &mut impl Iterator<Item = &str>) -> Vec<Vec<char>> {
     stacks
 }
 
-pub fn task1(input: &str) -> String {
+pub fn task1(input: &str) -> SolutionResult {
     let mut lines = input.lines();
     let mut stacks: Vec<Vec<char>> = init_crates(&mut lines);
 
@@ -45,13 +47,15 @@ pub fn task1(input: &str) -> String {
         }
     }
 
-    stacks
-        .into_iter()
-        .map(|stack| *stack.last().unwrap())
-        .collect()
+    SolutionResult::Str(
+        stacks
+            .into_iter()
+            .map(|stack| *stack.last().unwrap())
+            .collect(),
+    )
 }
 
-pub fn task2(input: &str) -> String {
+pub fn task2(input: &str) -> SolutionResult {
     let mut lines = input.lines();
     let mut stacks: Vec<Vec<char>> = init_crates(&mut lines);
 
@@ -82,8 +86,10 @@ pub fn task2(input: &str) -> String {
         to.extend(moved_blocks);
     }
 
-    stacks
-        .into_iter()
-        .map(|stack| *stack.last().unwrap())
-        .collect()
+    SolutionResult::Str(
+        stacks
+            .into_iter()
+            .map(|stack| *stack.last().unwrap())
+            .collect(),
+    )
 }

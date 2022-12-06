@@ -12,6 +12,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[macro_use]
+mod tooling;
+use tooling::*;
+
 mod day1;
 mod day2;
 mod day3;
@@ -19,85 +23,16 @@ mod day4;
 mod day5;
 mod day6;
 
-macro_rules! solutions {
-    ($max_day:expr) => {
-            seq!(N in 1..=$max_day {
-            [
-            #([
-                |data: _| Box::new(day~N::task1(data)),
-                |data: _| Box::new(day~N::task2(data))
-            ],)*
-        ]
-            })
-    };
-}
-
-macro_rules! inputs {
-    ($max_day:expr) => {
-            seq!(N in 1..=$max_day {
-            [
-            #(
-                    [
-             include_str!(concat!("day", N, "/input.txt")),
-             include_str!(concat!("day", N, "/testinput.txt")),
-                    ]
-            ,)*
-        ]
-            })
-    };
-}
-
 // change max day here
 const MAX_DAY: usize = 6;
-const SOLUTIONS: [[fn(&str) -> Box<dyn Debug>; 2]; MAX_DAY] = solutions!(6); // and here!
+const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(6); // and here!
 const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(6); // and here!
 
 fn main() {
     let args = Args::parse();
 
     if args.bench {
-        if cfg!(debug_assertions) {
-            eprintln!(
-                "{}: Benchmarking in debug build",
-                format!("WARNING").yellow().bold()
-            );
-        }
-
-        let mut elapsed_total: Duration = Default::default();
-        for (i, [f1, f2]) in SOLUTIONS.iter().enumerate() {
-            let day = i + 1;
-            let data = || load_data(day, false);
-
-            // Warm up cache
-            for _ in 0..1000 {
-                black_box(f1(data()));
-            }
-
-            let now = Instant::now();
-            for _ in 0..5000 {
-                black_box(f1(data()));
-            }
-            let elapsed1 = now.elapsed();
-            let now = Instant::now();
-            for _ in 0..5000 {
-                black_box(f2(data()));
-            }
-            let elapsed2 = now.elapsed();
-            println!(
-                "\n{}: {}\n{}: {}",
-                format!("day{day:02}/task1").bold(),
-                format!("{:>10?}", elapsed1 / 5000).green(),
-                format!("day{day:02}/task2").bold(),
-                format!("{:>10?}", elapsed2 / 5000).green(),
-            );
-
-            elapsed_total += elapsed1 + elapsed2;
-        }
-        println!(
-            "\n{}: {}",
-            format!("Total").bold(),
-            format!("{:>10?}", elapsed_total / 5000).green()
-        );
+        benchmarks()
     } else {
         let day = match args.day {
             Some(day) => day,
@@ -107,7 +42,7 @@ fn main() {
             }
         };
         let data = || load_data(day, args.test);
-        let (res1, res2): (Box<dyn Debug>, Box<dyn Debug>) = match day {
+        let (res1, res2): (SolutionResult, SolutionResult) = match day {
             day @ 1..=MAX_DAY => {
                 let day = day - 1;
                 (SOLUTIONS[day][0](data()), SOLUTIONS[day][1](data()))
@@ -122,14 +57,54 @@ fn main() {
             }
         };
 
-        println!("Result 1: {:?}\nResult 2: {:?}", res1, res2);
+        println!("Result 1: {}\nResult 2: {}", res1, res2);
     }
 }
 
-/// Will load a text file into lines which must be under `/src/dayXY/input.txt`
-/// or `/src/dayXY/testInput.txt` depending on `load_test`
+fn benchmarks() {
+    if cfg!(debug_assertions) {
+        eprintln!("{}: Benchmarking in debug build", "WARNING".yellow().bold());
+    }
+
+    let mut elapsed_total: Duration = Default::default();
+    for (i, [f1, f2]) in SOLUTIONS.iter().enumerate() {
+        let day = i + 1;
+        let data = || load_data(day, false);
+
+        // Warm up cache
+        for _ in 0..1000 {
+            black_box(f1(data()));
+        }
+
+        let now = Instant::now();
+        for _ in 0..5000 {
+            black_box(f1(data()));
+        }
+        let elapsed1 = now.elapsed();
+        let now = Instant::now();
+        for _ in 0..5000 {
+            black_box(f2(data()));
+        }
+        let elapsed2 = now.elapsed();
+        println!(
+            "\n{}: {}\n{}: {}",
+            format!("day{day:02}/task1").bold(),
+            format!("{:>10?}", elapsed1 / 5000).green(),
+            format!("day{day:02}/task2").bold(),
+            format!("{:>10?}", elapsed2 / 5000).green(),
+        );
+
+        elapsed_total += elapsed1 + elapsed2;
+    }
+    println!(
+        "\n{}: {}",
+        "Total".bold(),
+        format!("{:>10?}", elapsed_total / 5000).green()
+    );
+}
+
 fn load_data(day: usize, load_test: bool) -> &'static str {
-    return INPUTS[day - 1][load_test as usize];
+    INPUTS[day - 1][load_test as usize]
 }
 
 /// Advent of Code 2022 solutions in Rust

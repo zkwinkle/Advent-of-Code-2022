@@ -1,3 +1,4 @@
+use crate::tooling::SolutionResult;
 use std::{num::ParseIntError, str::FromStr};
 
 #[derive(Debug)]
@@ -34,8 +35,8 @@ impl FromStr for Range {
     }
 }
 
-pub fn task1(input: &str) -> i32 {
-    input.lines().fold(0, |acc, line| {
+pub fn task1(input: &str) -> SolutionResult {
+    SolutionResult::Signed(input.lines().fold(0, |acc, line| {
         let ranges: (&str, &str) = line.split_once(',').unwrap();
         let ranges: (Range, Range) = (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
 
@@ -44,11 +45,11 @@ pub fn task1(input: &str) -> i32 {
         } else {
             0
         }
-    })
+    }))
 }
 
-pub fn task2(input: &str) -> i32 {
-    input.lines().fold(0, |acc, line| {
+pub fn task2(input: &str) -> SolutionResult {
+    SolutionResult::Signed(input.lines().fold(0, |acc, line| {
         let ranges: (&str, &str) = line.split_once(',').unwrap();
         let ranges: (Range, Range) = (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
 
@@ -59,5 +60,5 @@ pub fn task2(input: &str) -> i32 {
         //);
 
         acc + if ranges.0.overlaps(&ranges.1) { 1 } else { 0 }
-    })
+    }))
 }

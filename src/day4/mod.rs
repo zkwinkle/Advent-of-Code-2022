@@ -58,10 +58,6 @@ pub fn task2(lines: impl Iterator<Item = String>) -> i32 {
         //    ranges.0.overlaps(&ranges.1)
         //);
 
-        acc + if ranges.0.overlaps(&ranges.1) {
-            1
-        } else {
-            0
-        }
+        acc + if ranges.0.overlaps(&ranges.1) { 1 } else { 0 }
     })
 }

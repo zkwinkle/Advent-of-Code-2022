@@ -1,13 +1,13 @@
 #![feature(iter_array_chunks)]
 #![feature(iter_next_chunk)]
 
+use clap::Parser;
+use seq_macro::seq;
 use std::{
+    fmt::Debug,
     fs::File,
     io::{BufRead, BufReader},
 };
-use std::fmt::Debug;
-
-use clap::Parser;
 
 mod day1;
 mod day2;
@@ -16,18 +16,29 @@ mod day4;
 mod day5;
 mod day6;
 
+macro_rules! solutions {
+    ($max_day:expr) => {
+            seq!(N in 1..=$max_day {
+            [
+            #([
+                |data: _| Box::new(day~N::task1(data)),
+                |data: _| Box::new(day~N::task2(data))
+            ],)*
+        ]
+            })
+    };
+}
+
 fn main() {
     let args = Args::parse();
+    let solutions: [[fn(Box<dyn Iterator<Item = String>>) -> Box<dyn Debug>; 2]; 6] = solutions!(6);
 
     let data = || load_data(args.day, args.test);
-
     let (res1, res2): (Box<dyn Debug>, Box<dyn Debug>) = match args.day {
-        1 => (Box::new(day1::task1(data())), Box::new(day1::task2(data()))),
-        2 => (Box::new(day2::task1(data())), Box::new(day2::task2(data()))),
-        3 => (Box::new(day3::task1(data())), Box::new(day3::task2(data()))),
-        4 => (Box::new(day4::task1(data())), Box::new(day4::task2(data()))),
-        5 => (Box::new(day5::task1(data())), Box::new(day5::task2(data()))),
-        6 => (Box::new(day6::task1(data())), Box::new(day6::task2(data()))),
+        day @ 1..=6 => {
+            let day = day - 1;
+            (solutions[day][0](data()), solutions[day][1](data()))
+        }
         26.. => {
             eprintln!("Day {} out of range (max 25)", args.day);
             return;
@@ -43,16 +54,18 @@ fn main() {
 
 /// Will load a text file into lines which must be under `/src/dayXY/input.txt`
 /// or `/src/dayXY/testInput.txt` depending on `load_test`
-fn load_data(day: usize, load_test: bool) -> impl Iterator<Item = String> {
+fn load_data(day: usize, load_test: bool) -> Box<dyn Iterator<Item = String>> {
     let file_name = if load_test { "testinput" } else { "input" };
     let file_name = format!("./src/day{}/{}.txt", day, file_name);
     let f =
         File::open(&file_name).unwrap_or_else(|_| panic!("Couldn't open input file {}", file_name));
     let reader = BufReader::new(f);
 
-    reader
-        .lines()
-        .map(|line_res| line_res.expect("IO Error reading input file"))
+    Box::new(
+        reader
+            .lines()
+            .map(|line_res| line_res.expect("IO Error reading input file")),
+    )
 }
 
 /// Advent of Code 2022 solutions in Rust

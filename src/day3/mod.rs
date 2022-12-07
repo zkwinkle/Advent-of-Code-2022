@@ -1,26 +1,21 @@
 use crate::tooling::SolutionResult;
 
-fn find_repeat(
-    mut iter1: impl Iterator<Item = char>,
-    iter2: impl Clone + Iterator<Item = char>,
-) -> char {
-    iter1.find(|&c1| iter2.clone().any(|c2| c1 == c2)).unwrap()
+fn find_repeat(iter1: &str, iter2: &str) -> char {
+    iter1.chars().find(|&c1| iter2.contains(c1)).unwrap()
 }
 
 fn get_priority(c: char) -> i32 {
-    if c.is_ascii_lowercase() {
-        (c as i32) - 96
-    } else if c.is_ascii_uppercase() {
-        (c as i32) - 38
-    } else {
-        panic!("Unexpected char passed to get_priority: '{}'", c);
+    match c {
+        'a'..='z' => (c as i32) - 96,
+        'A'..='Z' => (c as i32) - 38,
+        _ => panic!("Unexpected char passed to get_priority: '{}'", c),
     }
 }
 
 pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Signed(input.lines().fold(0, |acc, line| {
         let length = line.chars().count();
-        let repeat_char = find_repeat(line.chars().take(length / 2), line.chars().skip(length / 2));
+        let repeat_char = find_repeat(&line[..length / 2], &line[length / 2..]);
         //println!("Repeat char found in line {}: '{}'\tValue:{}",line,repeat_char, get_priority(repeat_char));
         acc + get_priority(repeat_char)
     }))
@@ -29,10 +24,7 @@ pub fn task1(input: &str) -> SolutionResult {
 fn find_badge(lines: &[&str; 3]) -> char {
     lines[0]
         .chars()
-        .find(|&c1| {
-            lines[1].chars().clone().any(|c2| c1 == c2)
-                && lines[2].chars().clone().any(|c3| c1 == c3)
-        })
+        .find(|&c1| lines[1].contains(c1) && lines[2].contains(c1))
         .unwrap()
 }
 

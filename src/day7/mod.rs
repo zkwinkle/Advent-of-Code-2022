@@ -83,7 +83,7 @@ impl<'a> File<'a> {
         let files = binding.get_files_mut();
 
         while let Some(line) = file_lines.next_if(|s| !s.starts_with('$')) {
-            let mut file_info = line.split_whitespace();
+            let mut file_info = line.split_ascii_whitespace();
             let first = file_info.next().unwrap();
             let name = file_info.next().unwrap();
             match first {
@@ -177,7 +177,7 @@ fn parse(input: &str) -> RcCell<File> {
     let mut lines = input.lines().peekable();
     while let Some(line) = lines.next() {
         //println!("{}", line);
-        let mut command = line.split_whitespace();
+        let mut command = line.split_ascii_whitespace();
         match command.nth(1).unwrap() {
             "cd" => {
                 let new_dir = current_dir

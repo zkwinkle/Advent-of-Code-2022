@@ -1,14 +1,6 @@
-use std::{
-    cell::RefCell,
-    cmp::min,
-    iter::Peekable,
-    rc::{Rc, Weak},
-};
+use std::{cmp::min, collections::HashMap, iter::Peekable};
 
 use crate::tooling::SolutionResult;
-
-type RcCell<T> = Rc<RefCell<T>>;
-type WeakCell<T> = Weak<RefCell<T>>;
 
 const MAX_SIZE: usize = 100000;
 const SPACE_AVAILABLE: usize = 70000000;
@@ -17,58 +9,38 @@ const SPACE_NEEDED: usize = 30000000;
 #[derive(Debug)]
 enum File<'a> {
     Data {
-        name: &'a str,
         data: usize,
     },
     Dir {
-        name: &'a str,
-        files: Vec<RcCell<File<'a>>>,
-        parent: WeakCell<File<'a>>,
+        files: HashMap<&'a str, File<'a>>,
         size: Option<usize>, // sizes have to be initialized
     },
     Root {
-        files: Vec<RcCell<File<'a>>>,
+        files: HashMap<&'a str, File<'a>>,
         size: Option<usize>,
     },
 }
 
 impl<'a> File<'a> {
-    fn new_dir(parent: RcCell<File<'a>>, name: &'a str) -> RcCell<File<'a>> {
-        Rc::new(RefCell::new(File::Dir {
-            name,
-            files: Vec::with_capacity(32),
-            parent: Rc::downgrade(&parent),
+    fn new_dir() -> File<'a> {
+        File::Dir {
+            files: HashMap::with_capacity(32),
             size: None,
-        }))
-    }
-
-    fn new_data(data: usize, name: &'a str) -> RcCell<File<'a>> {
-        Rc::new(RefCell::new(File::Data { name, data }))
-    }
-
-    fn get_name(&self) -> &str {
-        match self {
-            File::Data { name, .. } => name,
-            File::Dir { name, .. } => name,
-            File::Root { .. } => "/",
         }
     }
 
-    fn get_parent(&self) -> RcCell<File<'a>> {
-        match self {
-            File::Dir { parent, .. } => parent.upgrade().unwrap(),
-            _ => panic!("Called get_parent on non-dir file"),
-        }
+    fn new_data(data: usize) -> File<'a> {
+        File::Data { data }
     }
 
-    fn get_files(&self) -> &Vec<RcCell<File<'a>>> {
+    fn get_files(&self) -> &HashMap<&'a str, File<'a>> {
         match self {
             File::Dir { ref files, .. } | File::Root { ref files, .. } => files,
             File::Data { .. } => panic!("Called get_files on non-dir file"),
         }
     }
 
-    fn get_files_mut(&mut self) -> &mut Vec<RcCell<File<'a>>> {
+    fn get_files_mut(&mut self) -> &mut HashMap<&'a str, File<'a>> {
         match self {
             File::Dir { ref mut files, .. } | File::Root { ref mut files, .. } => files,
             File::Data { .. } => panic!("Called get_files_mut on non-dir file"),
@@ -78,38 +50,49 @@ impl<'a> File<'a> {
     /// Parsing function for files after 'ls' command. 'self' must be currently
     /// selected dir on which 'ls' is called. The iterator must not include any
     /// commands only files returned by 'ls'.
-    fn ls(parent: RcCell<File<'a>>, file_lines: &mut Peekable<impl Iterator<Item = &'a str>>) {
-        let mut binding = parent.borrow_mut();
-        let files = binding.get_files_mut();
+    fn ls(&mut self, file_lines: &mut Peekable<impl Iterator<Item = &'a str>>) {
+        let files = self.get_files_mut();
 
         while let Some(line) = file_lines.next_if(|s| !s.starts_with('$')) {
             let mut file_info = line.split_whitespace();
             let first = file_info.next().unwrap();
             let name = file_info.next().unwrap();
             match first {
-                "dir" => files.push(File::new_dir(Rc::clone(&parent), name)),
-                size => files.push(File::new_data(size.parse().unwrap(), name)),
-            }
+                "dir" => files.insert(name, File::new_dir()),
+                size => files.insert(name, File::new_data(size.parse().unwrap())),
+            };
         }
     }
 
+    //fn find_file(root: &'a File<'a>, path: Vec<&str>) -> &'a File<'a> {
+    //    let mut current_file = root;
+    //    for file in path {
+    //        current_file = current_file
+    //            .get_files()
+    //            .iter()
+    //            .find(|f| f.get_name() == file)
+    //            .unwrap();
+    //    }
+    //    current_file
+    //}
+
+    fn find_file_mut<'b>(root: &'b mut File<'a>, path: &Vec<&'a str>) -> &'b mut File<'a> {
+        let mut current_file = root;
+        for file in path {
+            current_file = current_file.get_files_mut().get_mut(file).unwrap();
+        }
+        current_file
+    }
+
     /// self must be dir-like (Root or Dir)
-    fn cd(&self, into: &str, root: RcCell<File<'a>>) -> RcCell<File<'a>> {
+    fn cd<'s>(into: &'s str, current_path: &mut Vec<&'s str>) {
         match into {
-            "/" => root,
-            ".." => self.get_parent(),
-            name => self.get_child(name),
+            "/" => current_path.clear(),
+            ".." => {
+                current_path.pop();
+            }
+            name => current_path.push(name),
         }
-    }
-
-    /// self must be dir-like (Root or Dir)
-    fn get_child(&self, name: &str) -> RcCell<File<'a>> {
-        let files = self.get_files();
-        let file = files
-            .iter()
-            .find(|&file| file.borrow().get_name() == name)
-            .unwrap();
-        Rc::clone(file)
     }
 
     fn init_sizes(&mut self) -> usize {
@@ -126,8 +109,8 @@ impl<'a> File<'a> {
             } => {
                 *size = Some(
                     files
-                        .iter()
-                        .fold(0, |total, file| total + file.borrow_mut().init_sizes()),
+                        .iter_mut()
+                        .fold(0, |total, (_, file)| total + file.init_sizes()),
                 );
                 size.unwrap()
             }
@@ -147,12 +130,11 @@ impl<'a> File<'a> {
 
 fn sum_under_max(dir: &File) -> usize {
     let files = dir.get_files();
-    files.iter().fold(0, |acc, file| {
-        let file = file.borrow();
+    files.iter().fold(0, |acc, (_, file)| {
         acc + match *file {
             File::Dir { .. } | File::Root { .. } => {
                 let size = file.get_size();
-                sum_under_max(&file)
+                sum_under_max(file)
                     + if size < MAX_SIZE {
                         //println!("Dir '{}' under max size: {}", file.get_name(), size);
                         size
@@ -165,13 +147,13 @@ fn sum_under_max(dir: &File) -> usize {
     })
 }
 
-fn parse(input: &str) -> RcCell<File> {
-    let root: RcCell<File> = Rc::new(RefCell::new(File::Root {
-        files: Vec::with_capacity(32),
+fn parse(input: &str) -> File {
+    let mut root: File = File::Root {
+        files: HashMap::with_capacity(32),
         size: None,
-    }));
+    };
 
-    let mut current_dir: RcCell<File> = Rc::clone(&root);
+    let mut current_dir: Vec<&str> = Vec::with_capacity(32);
 
     // parsing
     let mut lines = input.lines().peekable();
@@ -180,38 +162,33 @@ fn parse(input: &str) -> RcCell<File> {
         let mut command = line.split_whitespace();
         match command.nth(1).unwrap() {
             "cd" => {
-                let new_dir = current_dir
-                    .borrow()
-                    .cd(command.next().unwrap(), Rc::clone(&root));
-                current_dir = new_dir;
+                File::cd(command.next().unwrap(), &mut current_dir);
             }
-            "ls" => File::ls(Rc::clone(&current_dir), lines.by_ref()),
+            "ls" => File::find_file_mut(&mut root, &current_dir).ls(lines.by_ref()),
             _ => panic!("oops"),
         };
     }
 
-    root.borrow_mut().init_sizes();
+    root.init_sizes();
     root
 }
 
 pub fn task1(input: &str) -> SolutionResult {
     let root = parse(input);
 
-    let res = SolutionResult::Unsigned(sum_under_max(&root.borrow()));
-    res
+    SolutionResult::Unsigned(sum_under_max(&root))
 }
 
 fn get_smallest_over_thresh(dir: &File, thresh: usize) -> usize {
     let files = dir.get_files();
 
-    files.iter().fold(SPACE_NEEDED, |acc, file| {
-        let file = file.borrow();
+    files.iter().fold(SPACE_NEEDED, |acc, (_, file)| {
         match *file {
             File::Dir { .. } | File::Root { .. } => {
                 let size = file.get_size();
                 if size > thresh {
                     //println!("Dir '{}' over thresh: {}", file.get_name(), size);
-                    let sub_size = get_smallest_over_thresh(&file, thresh);
+                    let sub_size = get_smallest_over_thresh(file, thresh);
                     min(size, sub_size)
                 } else {
                     acc
@@ -225,7 +202,6 @@ fn get_smallest_over_thresh(dir: &File, thresh: usize) -> usize {
 pub fn task2(input: &str) -> SolutionResult {
     let root = parse(input);
 
-    let thresh = root.borrow().get_size() - (SPACE_AVAILABLE - SPACE_NEEDED);
-    let res = SolutionResult::Unsigned(get_smallest_over_thresh(&root.borrow(), thresh));
-    res
+    let thresh = root.get_size() - (SPACE_AVAILABLE - SPACE_NEEDED);
+    SolutionResult::Unsigned(get_smallest_over_thresh(&root, thresh))
 }

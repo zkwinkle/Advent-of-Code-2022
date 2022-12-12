@@ -23,7 +23,19 @@ enum File {
 }
 
 impl File {
-    fn get_name<'a>(&'a self) -> &'a str {
+    fn new_dir(parent: RcCell<File>, name: String) -> RcCell<File> {
+        Rc::new(RefCell::new(File::Dir {
+            name,
+            files: Vec::new(),
+            parent: Rc::clone(&parent),
+        }))
+    }
+
+    fn new_data(data: usize, name: String) -> RcCell<File> {
+        Rc::new(RefCell::new(File::Data { name, data }))
+    }
+
+    fn get_name(&self) -> &str {
         match self {
             File::Data { name, .. } => name,
             File::Dir { name, .. } => name,
@@ -38,60 +50,59 @@ impl File {
         }
     }
 
+    fn get_files(&self) -> &Vec<RcCell<File>> {
+        match self {
+            File::Dir { ref files, .. } | File::Root { ref files } => files,
+            File::Data { .. } => panic!("Called get_files on non-dir file"),
+        }
+    }
+
+    fn get_files_mut(&mut self) -> &mut Vec<RcCell<File>> {
+        match self {
+            File::Dir { ref mut files, .. } | File::Root { ref mut files } => files,
+            File::Data { .. } => panic!("Called get_files_mut on non-dir file"),
+        }
+    }
+
     /// Parsing function for files after 'ls' command. 'self' must be currently
     /// selected dir on which 'ls' is called. The iterator must not include any
     /// commands only files returned by 'ls'.
     fn ls(parent: RcCell<File>, file_lines: &mut Peekable<impl Iterator<Item = &str>>) {
-        //let mut file_lines = file_lines.peekable();
-        match *parent.borrow_mut() {
-            File::Dir { ref mut files, .. } | File::Root { ref mut files } => {
-                while let Some(line) = file_lines.next_if(|s| !s.starts_with('$')) {
-                    let mut file_info = line.split_whitespace();
-                    match file_info.next().unwrap() {
-                        "dir" => files.push(Rc::new(RefCell::new(File::Dir {
-                            name: file_info.next().unwrap().to_string(),
-                            files: Vec::new(),
-                            parent: Rc::clone(&parent),
-                        }))),
-                        size @ _ => files.push(Rc::new(RefCell::new(File::Data {
-                            name: file_info.next().unwrap().to_string(),
-                            data: size.parse().unwrap(),
-                        }))),
-                    }
-                }
-            }
-            _ => {
-                panic!("Called 'ls' on non-dir file");
+        let mut binding = parent.borrow_mut();
+        let files = binding.get_files_mut();
+
+        while let Some(line) = file_lines.next_if(|s| !s.starts_with('$')) {
+            let mut file_info = line.split_whitespace();
+            match file_info.next().unwrap() {
+                "dir" => files.push(File::new_dir(
+                    Rc::clone(&parent),
+                    file_info.next().unwrap().to_string(),
+                )),
+                size => files.push(File::new_data(
+                    size.parse().unwrap(),
+                    file_info.next().unwrap().to_string(),
+                )),
             }
         }
     }
 
-    fn cd<'a>(&self, into: &str, root: RcCell<File>) -> RcCell<File> {
-        match self {
-            File::Dir { .. } | File::Root { .. } => match into {
-                "/" => root,
-                ".." => self.get_parent(),
-                name @ _ => self.get_child(name),
-            },
-            _ => {
-                panic!("Called 'cd' on non-dir file");
-            }
+    /// self must be dir-like (Root or Dir)
+    fn cd(&self, into: &str, root: RcCell<File>) -> RcCell<File> {
+        match into {
+            "/" => root,
+            ".." => self.get_parent(),
+            name => self.get_child(name),
         }
     }
 
+    /// self must be dir-like (Root or Dir)
     fn get_child(&self, name: &str) -> RcCell<File> {
-        match self {
-            File::Dir { files, .. } | File::Root { files } => {
-                let file = files
-                    .iter()
-                    .find(|&file| file.borrow().get_name() == name)
-                    .unwrap();
-                Rc::clone(file)
-            }
-            _ => {
-                panic!("Called find_child on non-dir file");
-            }
-        }
+        let files = self.get_files();
+        let file = files
+            .iter()
+            .find(|&file| file.borrow().get_name() == name)
+            .unwrap();
+        Rc::clone(file)
     }
 
     fn get_size(&self) -> usize {
@@ -105,30 +116,26 @@ impl File {
 }
 
 fn sum_under_max(dir: &File) -> usize {
-    match dir {
-        File::Root { files } | File::Dir { files, .. } => files.iter().fold(0, |acc, file| {
-            let file = file.borrow();
-            acc + match *file {
-                File::Dir { .. } | File::Root { .. } => {
-                    let size = file.get_size();
-                    sum_under_max(&*file)
-                        + if size < MAX_SIZE {
-                            //println!("Dir '{}' under max size: {}", file.get_name(), size);
-                            size
-                        } else {
-                            0
-                        }
-                }
-                File::Data { .. } => 0,
+    let files = dir.get_files();
+    files.iter().fold(0, |acc, file| {
+        let file = file.borrow();
+        acc + match *file {
+            File::Dir { .. } | File::Root { .. } => {
+                let size = file.get_size();
+                sum_under_max(&file)
+                    + if size < MAX_SIZE {
+                        //println!("Dir '{}' under max size: {}", file.get_name(), size);
+                        size
+                    } else {
+                        0
+                    }
             }
-        }),
-        _ => {
-            panic!("WTF")
+            File::Data { .. } => 0,
         }
-    }
+    })
 }
 
-pub fn task1(input: &str) -> SolutionResult {
+fn parse(input: &str) -> RcCell<File> {
     let root: RcCell<File> = Rc::new(RefCell::new(File::Root { files: Vec::new() }));
 
     let mut current_dir: RcCell<File> = Rc::clone(&root);
@@ -148,57 +155,42 @@ pub fn task1(input: &str) -> SolutionResult {
             _ => panic!("oops"),
         };
     }
-    let res = SolutionResult::Unsigned(sum_under_max(&*root.borrow()));
+
+    root
+}
+
+pub fn task1(input: &str) -> SolutionResult {
+    let root = parse(input);
+
+    let res = SolutionResult::Unsigned(sum_under_max(&root.borrow()));
     res
 }
 
 fn get_smallest_over_thresh(dir: &File, thresh: usize) -> usize {
-    match dir {
-        File::Root { files } | File::Dir { files, .. } => {
-            files.iter().fold(SPACE_NEEDED, |acc, file| {
-                let file = file.borrow();
-                match *file {
-                    File::Dir { .. } | File::Root { .. } => {
-                        let size = file.get_size();
-                        if size > thresh {
-                            //println!("Dir '{}' over thresh: {}", file.get_name(), size);
-                            let sub_size = get_smallest_over_thresh(&*file, thresh);
-                            min(size, sub_size)
-                        } else {
-                            acc
-                        }
-                    }
-                    File::Data { .. } => acc,
+    let files = dir.get_files();
+
+    files.iter().fold(SPACE_NEEDED, |acc, file| {
+        let file = file.borrow();
+        match *file {
+            File::Dir { .. } | File::Root { .. } => {
+                let size = file.get_size();
+                if size > thresh {
+                    //println!("Dir '{}' over thresh: {}", file.get_name(), size);
+                    let sub_size = get_smallest_over_thresh(&file, thresh);
+                    min(size, sub_size)
+                } else {
+                    acc
                 }
-            })
+            }
+            File::Data { .. } => acc,
         }
-        _ => {
-            panic!("WTF")
-        }
-    }
+    })
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    let root: RcCell<File> = Rc::new(RefCell::new(File::Root { files: Vec::new() }));
+    let root = parse(input);
 
-    let mut current_dir: RcCell<File> = Rc::clone(&root);
-
-    // parsing
-    let mut lines = input.lines().peekable();
-    while let Some(line) = lines.next() {
-        //println!("{}", line);
-        let mut command = line.split_whitespace();
-        match command.nth(1).unwrap() {
-            "cd" => {
-                current_dir = Rc::clone(&current_dir)
-                    .borrow()
-                    .cd(command.next().unwrap(), Rc::clone(&root));
-            }
-            "ls" => File::ls(Rc::clone(&current_dir), lines.by_ref()),
-            _ => panic!("oops"),
-        };
-    }
     let thresh = root.borrow().get_size() - (SPACE_AVAILABLE - SPACE_NEEDED);
-    let res = SolutionResult::Unsigned(get_smallest_over_thresh(&*root.borrow(), thresh));
+    let res = SolutionResult::Unsigned(get_smallest_over_thresh(&root.borrow(), thresh));
     res
 }

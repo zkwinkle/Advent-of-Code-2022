@@ -14,6 +14,7 @@ const MAX_SIZE: usize = 100000;
 const SPACE_AVAILABLE: usize = 70000000;
 const SPACE_NEEDED: usize = 30000000;
 
+#[derive(Debug)]
 enum File {
     Data {
         name: String,
@@ -23,9 +24,11 @@ enum File {
         name: String,
         files: Vec<RcCell<File>>,
         parent: WeakCell<File>,
+        size: Option<usize>, // sizes have to be initialized
     },
     Root {
         files: Vec<RcCell<File>>,
+        size: Option<usize>,
     },
 }
 
@@ -34,7 +37,8 @@ impl File {
         Rc::new(RefCell::new(File::Dir {
             name,
             files: Vec::new(),
-            parent: Rc::downgrade(&parent), //Rc::clone(&parent),
+            parent: Rc::downgrade(&parent),
+            size: None,
         }))
     }
 
@@ -59,14 +63,14 @@ impl File {
 
     fn get_files(&self) -> &Vec<RcCell<File>> {
         match self {
-            File::Dir { ref files, .. } | File::Root { ref files } => files,
+            File::Dir { ref files, .. } | File::Root { ref files, .. } => files,
             File::Data { .. } => panic!("Called get_files on non-dir file"),
         }
     }
 
     fn get_files_mut(&mut self) -> &mut Vec<RcCell<File>> {
         match self {
-            File::Dir { ref mut files, .. } | File::Root { ref mut files } => files,
+            File::Dir { ref mut files, .. } | File::Root { ref mut files, .. } => files,
             File::Data { .. } => panic!("Called get_files_mut on non-dir file"),
         }
     }
@@ -108,11 +112,34 @@ impl File {
         Rc::clone(file)
     }
 
+    fn init_sizes(&mut self) -> usize {
+        match self {
+            File::Dir {
+                files,
+                ref mut size,
+                ..
+            }
+            | File::Root {
+                files,
+                ref mut size,
+                ..
+            } => {
+                *size = Some(
+                    files
+                        .iter()
+                        .fold(0, |total, file| total + file.borrow_mut().init_sizes()),
+                );
+                size.unwrap()
+            }
+            File::Data { data, .. } => *data,
+        }
+    }
+
     fn get_size(&self) -> usize {
         match self {
-            File::Dir { files, .. } | File::Root { files } => files
-                .iter()
-                .fold(0, |total, file| total + file.borrow().get_size()),
+            File::Dir { size, .. } | File::Root { size, .. } => {
+                size.expect("Called get_size() on unitialized file directory")
+            }
             File::Data { data, .. } => *data,
         }
     }
@@ -139,7 +166,10 @@ fn sum_under_max(dir: &File) -> usize {
 }
 
 fn parse(input: &str) -> RcCell<File> {
-    let root: RcCell<File> = Rc::new(RefCell::new(File::Root { files: Vec::new() }));
+    let root: RcCell<File> = Rc::new(RefCell::new(File::Root {
+        files: Vec::new(),
+        size: None,
+    }));
 
     let mut current_dir: RcCell<File> = Rc::clone(&root);
 
@@ -159,6 +189,7 @@ fn parse(input: &str) -> RcCell<File> {
         };
     }
 
+    root.borrow_mut().init_sizes();
     root
 }
 

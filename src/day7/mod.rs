@@ -15,25 +15,25 @@ const SPACE_AVAILABLE: usize = 70000000;
 const SPACE_NEEDED: usize = 30000000;
 
 #[derive(Debug)]
-enum File {
+enum File<'a> {
     Data {
-        name: String,
+        name: &'a str,
         data: usize,
     },
     Dir {
-        name: String,
-        files: Vec<RcCell<File>>,
-        parent: WeakCell<File>,
+        name: &'a str,
+        files: Vec<RcCell<File<'a>>>,
+        parent: WeakCell<File<'a>>,
         size: Option<usize>, // sizes have to be initialized
     },
     Root {
-        files: Vec<RcCell<File>>,
+        files: Vec<RcCell<File<'a>>>,
         size: Option<usize>,
     },
 }
 
-impl File {
-    fn new_dir(parent: RcCell<File>, name: String) -> RcCell<File> {
+impl<'a> File<'a> {
+    fn new_dir(parent: RcCell<File<'a>>, name: &'a str) -> RcCell<File<'a>> {
         Rc::new(RefCell::new(File::Dir {
             name,
             files: Vec::new(),
@@ -42,7 +42,7 @@ impl File {
         }))
     }
 
-    fn new_data(data: usize, name: String) -> RcCell<File> {
+    fn new_data(data: usize, name: &'a str) -> RcCell<File<'a>> {
         Rc::new(RefCell::new(File::Data { name, data }))
     }
 
@@ -54,21 +54,21 @@ impl File {
         }
     }
 
-    fn get_parent(&self) -> RcCell<File> {
+    fn get_parent(&self) -> RcCell<File<'a>> {
         match self {
             File::Dir { parent, .. } => parent.upgrade().unwrap(),
             _ => panic!("Called get_parent on non-dir file"),
         }
     }
 
-    fn get_files(&self) -> &Vec<RcCell<File>> {
+    fn get_files(&self) -> &Vec<RcCell<File<'a>>> {
         match self {
             File::Dir { ref files, .. } | File::Root { ref files, .. } => files,
             File::Data { .. } => panic!("Called get_files on non-dir file"),
         }
     }
 
-    fn get_files_mut(&mut self) -> &mut Vec<RcCell<File>> {
+    fn get_files_mut(&mut self) -> &mut Vec<RcCell<File<'a>>> {
         match self {
             File::Dir { ref mut files, .. } | File::Root { ref mut files, .. } => files,
             File::Data { .. } => panic!("Called get_files_mut on non-dir file"),
@@ -78,14 +78,14 @@ impl File {
     /// Parsing function for files after 'ls' command. 'self' must be currently
     /// selected dir on which 'ls' is called. The iterator must not include any
     /// commands only files returned by 'ls'.
-    fn ls(parent: RcCell<File>, file_lines: &mut Peekable<impl Iterator<Item = &str>>) {
+    fn ls(parent: RcCell<File<'a>>, file_lines: &mut Peekable<impl Iterator<Item = &'a str>>) {
         let mut binding = parent.borrow_mut();
         let files = binding.get_files_mut();
 
         while let Some(line) = file_lines.next_if(|s| !s.starts_with('$')) {
             let mut file_info = line.split_whitespace();
             let first = file_info.next().unwrap();
-            let name = file_info.next().unwrap().to_string();
+            let name = file_info.next().unwrap();
             match first {
                 "dir" => files.push(File::new_dir(Rc::clone(&parent), name)),
                 size => files.push(File::new_data(size.parse().unwrap(), name)),
@@ -94,7 +94,7 @@ impl File {
     }
 
     /// self must be dir-like (Root or Dir)
-    fn cd(&self, into: &str, root: RcCell<File>) -> RcCell<File> {
+    fn cd(&self, into: &str, root: RcCell<File<'a>>) -> RcCell<File<'a>> {
         match into {
             "/" => root,
             ".." => self.get_parent(),
@@ -103,7 +103,7 @@ impl File {
     }
 
     /// self must be dir-like (Root or Dir)
-    fn get_child(&self, name: &str) -> RcCell<File> {
+    fn get_child(&self, name: &str) -> RcCell<File<'a>> {
         let files = self.get_files();
         let file = files
             .iter()
@@ -180,9 +180,10 @@ fn parse(input: &str) -> RcCell<File> {
         let mut command = line.split_whitespace();
         match command.nth(1).unwrap() {
             "cd" => {
-                current_dir = Rc::clone(&current_dir)
+                let new_dir = current_dir
                     .borrow()
                     .cd(command.next().unwrap(), Rc::clone(&root));
+                current_dir = new_dir;
             }
             "ls" => File::ls(Rc::clone(&current_dir), lines.by_ref()),
             _ => panic!("oops"),

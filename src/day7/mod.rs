@@ -1,8 +1,15 @@
-use std::{cell::RefCell, cmp::min, iter::Peekable, rc::Rc};
+use std::{
+    cell::RefCell,
+    cmp::min,
+    iter::Peekable,
+    rc::{Rc, Weak},
+};
 
 use crate::tooling::SolutionResult;
 
 type RcCell<T> = Rc<RefCell<T>>;
+type WeakCell<T> = Weak<RefCell<T>>;
+
 const MAX_SIZE: usize = 100000;
 const SPACE_AVAILABLE: usize = 70000000;
 const SPACE_NEEDED: usize = 30000000;
@@ -15,7 +22,7 @@ enum File {
     Dir {
         name: String,
         files: Vec<RcCell<File>>,
-        parent: RcCell<File>,
+        parent: WeakCell<File>,
     },
     Root {
         files: Vec<RcCell<File>>,
@@ -27,7 +34,7 @@ impl File {
         Rc::new(RefCell::new(File::Dir {
             name,
             files: Vec::new(),
-            parent: Rc::clone(&parent),
+            parent: Rc::downgrade(&parent), //Rc::clone(&parent),
         }))
     }
 
@@ -45,7 +52,7 @@ impl File {
 
     fn get_parent(&self) -> RcCell<File> {
         match self {
-            File::Dir { parent, .. } => Rc::clone(parent),
+            File::Dir { parent, .. } => parent.upgrade().unwrap(),
             _ => panic!("Called get_parent on non-dir file"),
         }
     }
@@ -73,15 +80,11 @@ impl File {
 
         while let Some(line) = file_lines.next_if(|s| !s.starts_with('$')) {
             let mut file_info = line.split_whitespace();
-            match file_info.next().unwrap() {
-                "dir" => files.push(File::new_dir(
-                    Rc::clone(&parent),
-                    file_info.next().unwrap().to_string(),
-                )),
-                size => files.push(File::new_data(
-                    size.parse().unwrap(),
-                    file_info.next().unwrap().to_string(),
-                )),
+            let first = file_info.next().unwrap();
+            let name = file_info.next().unwrap().to_string();
+            match first {
+                "dir" => files.push(File::new_dir(Rc::clone(&parent), name)),
+                size => files.push(File::new_data(size.parse().unwrap(), name)),
             }
         }
     }

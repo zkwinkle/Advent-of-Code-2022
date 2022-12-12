@@ -1,7 +1,6 @@
 #![feature(iter_array_chunks)]
 #![feature(iter_next_chunk)]
 #![feature(anonymous_lifetime_in_impl_trait)]
-#![feature(bench_black_box)]
 
 use clap::Parser;
 use colored::Colorize;
@@ -22,11 +21,12 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 
 // change max day here
-const MAX_DAY: usize = 6;
-const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(6); // and here!
-const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(6); // and here!
+const MAX_DAY: usize = 7;
+const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(7); // and here!
+const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(7); // and here!
 
 fn main() {
     let args = Args::parse();

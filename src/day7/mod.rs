@@ -36,7 +36,7 @@ impl<'a> File<'a> {
     fn new_dir(parent: RcCell<File<'a>>, name: &'a str) -> RcCell<File<'a>> {
         Rc::new(RefCell::new(File::Dir {
             name,
-            files: Vec::new(),
+            files: Vec::with_capacity(32),
             parent: Rc::downgrade(&parent),
             size: None,
         }))
@@ -167,7 +167,7 @@ fn sum_under_max(dir: &File) -> usize {
 
 fn parse(input: &str) -> RcCell<File> {
     let root: RcCell<File> = Rc::new(RefCell::new(File::Root {
-        files: Vec::new(),
+        files: Vec::with_capacity(32),
         size: None,
     }));
 

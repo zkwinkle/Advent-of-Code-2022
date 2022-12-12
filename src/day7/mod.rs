@@ -1,9 +1,11 @@
-use std::{cell::RefCell, iter::Peekable, rc::Rc};
+use std::{cell::RefCell, cmp::min, iter::Peekable, rc::Rc};
 
 use crate::tooling::SolutionResult;
 
 type RcCell<T> = Rc<RefCell<T>>;
 const MAX_SIZE: usize = 100000;
+const SPACE_AVAILABLE: usize = 70000000;
+const SPACE_NEEDED: usize = 30000000;
 
 enum File {
     Data {
@@ -150,6 +152,53 @@ pub fn task1(input: &str) -> SolutionResult {
     res
 }
 
+fn get_smallest_over_thresh(dir: &File, thresh: usize) -> usize {
+    match dir {
+        File::Root { files } | File::Dir { files, .. } => {
+            files.iter().fold(SPACE_NEEDED, |acc, file| {
+                let file = file.borrow();
+                match *file {
+                    File::Dir { .. } | File::Root { .. } => {
+                        let size = file.get_size();
+                        if size > thresh {
+                            //println!("Dir '{}' over thresh: {}", file.get_name(), size);
+                            let sub_size = get_smallest_over_thresh(&*file, thresh);
+                            min(size, sub_size)
+                        } else {
+                            acc
+                        }
+                    }
+                    File::Data { .. } => acc,
+                }
+            })
+        }
+        _ => {
+            panic!("WTF")
+        }
+    }
+}
+
 pub fn task2(input: &str) -> SolutionResult {
-    SolutionResult::Unsigned(0)
+    let root: RcCell<File> = Rc::new(RefCell::new(File::Root { files: Vec::new() }));
+
+    let mut current_dir: RcCell<File> = Rc::clone(&root);
+
+    // parsing
+    let mut lines = input.lines().peekable();
+    while let Some(line) = lines.next() {
+        //println!("{}", line);
+        let mut command = line.split_whitespace();
+        match command.nth(1).unwrap() {
+            "cd" => {
+                current_dir = Rc::clone(&current_dir)
+                    .borrow()
+                    .cd(command.next().unwrap(), Rc::clone(&root));
+            }
+            "ls" => File::ls(Rc::clone(&current_dir), lines.by_ref()),
+            _ => panic!("oops"),
+        };
+    }
+    let thresh = root.borrow().get_size() - (SPACE_AVAILABLE - SPACE_NEEDED);
+    let res = SolutionResult::Unsigned(get_smallest_over_thresh(&*root.borrow(), thresh));
+    res
 }

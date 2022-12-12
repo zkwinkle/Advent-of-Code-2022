@@ -13,7 +13,7 @@ impl Tool {
             'A' | 'X' => Tool::Rock,
             'B' | 'Y' => Tool::Paper,
             'C' | 'Z' => Tool::Scissors,
-            _ => panic!("Invalid char passed to Tool::from_char(): '{}'", c),
+            _ => panic!("Invalid char passed to Tool::from_char(): '{c}'"),
         }
     }
 

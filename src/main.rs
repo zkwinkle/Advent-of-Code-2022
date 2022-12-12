@@ -32,10 +32,7 @@ fn main() {
     let args = Args::parse();
 
     if let Some(passes_opt) = args.bench {
-        let passes = match passes_opt {
-            Some(passes) => passes,
-            None => 1000, // Default amount of passes if unsepcified
-        };
+        let passes = passes_opt.unwrap_or(1000);
         benchmarks(passes)
     } else {
         let day = match args.day {
@@ -52,16 +49,16 @@ fn main() {
                 (SOLUTIONS[day][0](data()), SOLUTIONS[day][1](data()))
             }
             26.. => {
-                eprintln!("Day {} out of range (max 25)", day);
+                eprintln!("Day {day} out of range (max 25)");
                 return;
             }
             _ => {
-                eprintln!("No solution available for day {}!", day);
+                eprintln!("No solution available for day {day}!");
                 return;
             }
         };
 
-        println!("Result 1: {}\nResult 2: {}", res1, res2);
+        println!("Result 1: {res1}\nResult 2: {res2}");
     }
 }
 

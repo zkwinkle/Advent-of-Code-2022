@@ -9,9 +9,9 @@ pub enum SolutionResult {
 impl fmt::Display for SolutionResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SolutionResult::Str(str) => write!(f, "{}", str),
-            SolutionResult::Signed(n) => write!(f, "{}", n),
-            SolutionResult::Unsigned(n) => write!(f, "{}", n),
+            SolutionResult::Str(str) => write!(f, "{str}"),
+            SolutionResult::Signed(n) => write!(f, "{n}"),
+            SolutionResult::Unsigned(n) => write!(f, "{n}"),
         }
     }
 }

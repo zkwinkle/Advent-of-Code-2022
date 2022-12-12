@@ -7,10 +7,10 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(
         line.windows(4)
             .position(|slice| {
-                slice
-                    .iter().enumerate()
-                    .find(|(i, c1)| slice[i+1..].contains(c1))
-                    .is_none()
+                !slice
+                    .iter()
+                    .enumerate()
+                    .any(|(i, c1)| slice[i + 1..].contains(c1))
             })
             .unwrap()
             + 4,
@@ -24,10 +24,10 @@ pub fn task2(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(
         line.windows(14)
             .position(|slice| {
-                slice
-                    .iter().enumerate()
-                    .find(|(i, c1)| slice[i+1..].contains(c1))
-                    .is_none()
+                !slice
+                    .iter()
+                    .enumerate()
+                    .any(|(i, c1)| slice[i + 1..].contains(c1))
             })
             .unwrap()
             + 14,

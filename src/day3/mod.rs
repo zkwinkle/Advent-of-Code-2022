@@ -8,7 +8,7 @@ fn get_priority(c: char) -> i32 {
     match c {
         'a'..='z' => (c as i32) - 96,
         'A'..='Z' => (c as i32) - 38,
-        _ => panic!("Unexpected char passed to get_priority: '{}'", c),
+        _ => panic!("Unexpected char passed to get_priority: '{c}'"),
     }
 }
 

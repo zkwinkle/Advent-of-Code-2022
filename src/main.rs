@@ -32,12 +32,9 @@ fn main() {
     let args = Args::parse();
 
     if let Some(passes_opt) = args.bench {
-        let passes = {
-            if let Some(passes) = passes_opt {
-                passes
-            } else {
-                1000 // Default amount of passes if unsepcified
-            }
+        let passes = match passes_opt {
+            Some(passes) => passes,
+            None => 1000, // Default amount of passes if unsepcified
         };
         benchmarks(passes)
     } else {

@@ -73,6 +73,50 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(res)
 }
 
+fn sum_view<'a, T: Iterator<Item = &'a u8>>(mut iter: T) -> usize {
+    let tree = iter.next().unwrap();
+
+    let mut count = 0;
+    for t in iter {
+        count += 1;
+        if t >= tree {
+            break;
+        }
+    }
+    count
+}
+
+fn view_along_x(vec: &Vec<u8>, width: usize, x: usize, y: usize) -> usize {
+    let i = xy2i(x, y, width);
+    sum_view(vec[i - x..i + 1].iter().rev()) * sum_view(vec[i..i + (width - x)].iter())
+}
+
+fn view_along_y(vec: &Vec<u8>, width: usize, x: usize, y: usize) -> usize {
+    sum_view(vec.iter().skip(x).step_by(width).take(y + 1).rev())
+        * sum_view(vec.iter().skip(x).step_by(width).skip(y))
+}
+
+fn get_view_score(vec: &Vec<u8>, i: usize, width: usize) -> usize {
+    let (x, y) = i2xy(i, width);
+
+    let score = view_along_x(vec, width, x, y) * view_along_y(vec, width, x, y);
+    //println!("Tree {} has view score of: {score}", vec[i]);
+    return score;
+}
+
 pub fn task2(input: &str) -> SolutionResult {
-    SolutionResult::Unsigned(0)
+    let (forest, width) = parse_forest(input);
+
+    let res = forest
+        .iter()
+        .enumerate()
+        .map(|(i, _)| get_view_score(&forest, i, width))
+        .max()
+        .unwrap();
+    //.inspect(|(i, t)| {
+    //    let (x, y) = i2xy(*i, width);
+    //    println!("Tree visible at ({x}, {y}): {t}");
+    //})
+
+    SolutionResult::Unsigned(res)
 }

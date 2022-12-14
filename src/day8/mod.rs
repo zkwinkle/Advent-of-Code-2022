@@ -1,48 +1,12 @@
+use itertools::Itertools;
+
 use crate::tooling::SolutionResult;
 
 fn xy2i(x: usize, y: usize, width: usize) -> usize {
     y * width + x
 }
-fn i2xy(i: usize, width: usize) -> (usize, usize) {
-    (i % width, i / width)
-}
 
-fn check_along_x(vec: &Vec<u8>, width: usize, x: usize, y: usize) -> bool {
-    let tree = vec[xy2i(x, y, width)];
-    let i = xy2i(x, y, width);
-    !(vec[i - x..i].iter().any(|&t| t >= tree)
-        && vec[i + 1..i + (width - x)].iter().any(|&t| t >= tree))
-}
-
-fn check_along_y(vec: &Vec<u8>, width: usize, x: usize, y: usize) -> bool {
-    let tree = vec[xy2i(x, y, width)];
-    !(vec
-        .iter()
-        .skip(x)
-        .step_by(width)
-        .take(y)
-        //.inspect(|t| {
-        //    println!("Inspecting tree: {t}");
-        //})
-        .any(|&t| t >= tree)
-        && vec
-            .iter()
-            .skip(x)
-            .step_by(width)
-            .skip(y + 1)
-            //.inspect(|t| {
-            //    println!("Inspecting tree2: {t}");
-            //})
-            .any(|&t| t >= tree))
-}
-
-fn check_visibility(vec: &Vec<u8>, i: usize, width: usize) -> bool {
-    let (x, y) = i2xy(i, width);
-
-    check_along_x(vec, width, x, y) || check_along_y(vec, width, x, y)
-}
-
-pub fn parse_forest(input: &str) -> (Vec<u8>, usize) {
+fn parse_forest(input: &str) -> (Vec<u8>, usize) {
     let lines = input.lines();
     let width = lines.clone().next().unwrap().chars().count();
     let length = lines.clone().count();
@@ -57,13 +21,75 @@ pub fn parse_forest(input: &str) -> (Vec<u8>, usize) {
     (forest, width)
 }
 
-pub fn task1(input: &str) -> SolutionResult {
-    let (forest, width) = parse_forest(input);
+fn up_left_visibility(forest: &Vec<u8>, width: usize) -> (Vec<u8>, Vec<u8>) {
+    let size = forest.len();
+    let length = size / width;
 
-    let res = forest
-        .iter()
+    let mut up_highest: Vec<u8> = Vec::with_capacity(size);
+    let mut left_highest: Vec<u8> = Vec::with_capacity(size);
+
+    for y in 0..length {
+        for x in 0..width {
+            let i = xy2i(x, y, width);
+            let tree = forest[i];
+
+            if x == 0 || tree > left_highest[i - 1] {
+                left_highest.push(tree);
+            } else {
+                left_highest.push(left_highest[i - 1]);
+            }
+
+            if y == 0 || tree > up_highest[i - width] {
+                up_highest.push(tree);
+            } else {
+                up_highest.push(up_highest[i - width]);
+            }
+        }
+    }
+
+    (up_highest, left_highest)
+}
+
+fn check_visibility(
+    tree: u8,
+    i: usize,
+    x: usize,
+    y: usize,
+    width: usize,
+    length: usize,
+    u: &Vec<u8>,
+    d: &Vec<u8>,
+    l: &Vec<u8>,
+    r: &Vec<u8>,
+) -> bool {
+    if x == 0 || x == width - 1 || y == 0 || y == length - 1 {
+        true
+    } else {
+        tree > l[i - 1] || tree > r[i + 1] || tree > u[i - width] || tree > d[i + width]
+    }
+}
+
+pub fn task1(input: &str) -> SolutionResult {
+    let (mut forest, width) = parse_forest(input);
+
+    let size = forest.len();
+    let length = size / width;
+
+    let (up, left) = up_left_visibility(&forest, width);
+    forest.reverse();
+    let (mut down, mut right) = up_left_visibility(&forest, width);
+    down.reverse();
+    right.reverse();
+    forest.reverse();
+
+    let res = (0..length)
+        .cartesian_product(0..width)
+        .zip(forest)
         .enumerate()
-        .filter(|(i, _)| check_visibility(&forest, *i, width))
+        //.inspect(|&(i, ((y,x), t))| println!("({x},{y}): {t} (#{i})"))
+        .filter(|&(i, ((y,x), t))| {
+            check_visibility(t, i, x, y, width, length, &up, &down, &left, &right)
+        })
         //.inspect(|(i, t)| {
         //    let (x, y) = i2xy(*i, width);
         //    println!("Tree visible at ({x}, {y}): {t}");
@@ -101,27 +127,33 @@ fn view_left(forest: &Vec<u8>, x: usize, i: usize) -> usize {
     v
 }
 
-fn up_left_views(forest: &Vec<u8>, width: usize, size: usize) -> (Vec<usize>, Vec<usize>) {
+fn up_left_views(forest: &Vec<u8>, width: usize) -> (Vec<usize>, Vec<usize>) {
+    let size = forest.len();
+    let length = size / width;
+
     let mut up_views: Vec<usize> = Vec::with_capacity(size);
     let mut left_views: Vec<usize> = Vec::with_capacity(size);
 
-    for (i, tree) in forest.iter().enumerate() {
-        let (x, y) = i2xy(i, width);
+    for y in 0..length {
+        for x in 0..width {
+            let i = xy2i(x, y, width);
+            let tree = forest[i];
 
-        if x == 0 {
-            left_views.push(0);
-        } else if forest[i - 1] >= *tree {
-            left_views.push(1);
-        } else {
-            left_views.push(view_left(forest, x, i));
-        }
+            if x == 0 {
+                left_views.push(0);
+            } else if forest[i - 1] >= tree {
+                left_views.push(1);
+            } else {
+                left_views.push(view_left(forest, x, i));
+            }
 
-        if y == 0 {
-            up_views.push(0);
-        } else if forest[i - width] >= *tree {
-            up_views.push(1);
-        } else {
-            up_views.push(view_up(forest, width, i));
+            if y == 0 {
+                up_views.push(0);
+            } else if forest[i - width] >= tree {
+                up_views.push(1);
+            } else {
+                up_views.push(view_up(forest, width, i));
+            }
         }
     }
 
@@ -132,9 +164,9 @@ pub fn task2(input: &str) -> SolutionResult {
     let (mut forest, width) = parse_forest(input);
 
     let size = forest.len();
-    let (up_views, left_views) = up_left_views(&forest, width, size);
+    let (up_views, left_views) = up_left_views(&forest, width);
     forest.reverse();
-    let (mut down_views, mut right_views) = up_left_views(&forest, width, size);
+    let (mut down_views, mut right_views) = up_left_views(&forest, width);
     down_views.reverse();
     right_views.reverse();
 

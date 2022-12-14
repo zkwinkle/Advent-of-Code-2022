@@ -31,7 +31,7 @@ impl fmt::Display for Move {
             Move::Up(dist) => ("Up", dist),
             Move::Down(dist) => ("Down", dist),
         };
-        write!(f, "{0}: {1}", name, dist)
+        write!(f, "{name}: {dist}")
     }
 }
 
@@ -95,7 +95,7 @@ fn build_rope_movement<F>(mut r: Rope, move_head: F, d: u8) -> impl Iterator<Ite
 where
     F: Fn(Position) -> Position + Clone,
 {
-    let moves = (0..d).map(move |_| {
+    (0..d).map(move |_| {
         r.head = move_head(r.head);
 
         match (r.head - r.tail).tuple() {
@@ -112,8 +112,7 @@ where
         }
 
         r
-    });
-    moves
+    })
 }
 
 impl Rope {

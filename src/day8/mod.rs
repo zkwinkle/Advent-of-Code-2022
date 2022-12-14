@@ -21,7 +21,7 @@ fn parse_forest(input: &str) -> (Vec<u8>, usize) {
     (forest, width)
 }
 
-fn up_left_visibility(forest: &Vec<u8>, width: usize) -> (Vec<u8>, Vec<u8>) {
+fn up_left_visibility(forest: &[u8], width: usize) -> (Vec<u8>, Vec<u8>) {
     let size = forest.len();
     let length = size / width;
 
@@ -52,20 +52,21 @@ fn up_left_visibility(forest: &Vec<u8>, width: usize) -> (Vec<u8>, Vec<u8>) {
 
 fn check_visibility(
     tree: u8,
-    i: usize,
-    x: usize,
-    y: usize,
+    ixy: (usize, usize, usize),
     width: usize,
     length: usize,
-    u: &Vec<u8>,
-    d: &Vec<u8>,
-    l: &Vec<u8>,
-    r: &Vec<u8>,
+    udlr: (&[u8], &[u8], &[u8], &[u8]),
 ) -> bool {
+    let i = ixy.0;
+    let x = ixy.1;
+    let y = ixy.2;
     if x == 0 || x == width - 1 || y == 0 || y == length - 1 {
         true
     } else {
-        tree > l[i - 1] || tree > r[i + 1] || tree > u[i - width] || tree > d[i + width]
+        tree > udlr.2[i - 1]
+            || tree > udlr.3[i + 1]
+            || tree > udlr.0[i - width]
+            || tree > udlr.1[i + width]
     }
 }
 
@@ -87,8 +88,8 @@ pub fn task1(input: &str) -> SolutionResult {
         .zip(forest)
         .enumerate()
         //.inspect(|&(i, ((y,x), t))| println!("({x},{y}): {t} (#{i})"))
-        .filter(|&(i, ((y,x), t))| {
-            check_visibility(t, i, x, y, width, length, &up, &down, &left, &right)
+        .filter(|&(i, ((y, x), t))| {
+            check_visibility(t, (i, x, y), width, length, (&up, &down, &left, &right))
         })
         //.inspect(|(i, t)| {
         //    let (x, y) = i2xy(*i, width);
@@ -99,7 +100,7 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(res)
 }
 
-fn view_up(forest: &Vec<u8>, width: usize, mut i: usize) -> usize {
+fn view_up(forest: &[u8], width: usize, mut i: usize) -> usize {
     let tree = forest[i];
     let mut v = 0;
     while i >= width {
@@ -113,7 +114,7 @@ fn view_up(forest: &Vec<u8>, width: usize, mut i: usize) -> usize {
     v
 }
 
-fn view_left(forest: &Vec<u8>, x: usize, i: usize) -> usize {
+fn view_left(forest: &[u8], x: usize, i: usize) -> usize {
     let tree = forest[i];
     let mut v = 0;
 
@@ -127,7 +128,7 @@ fn view_left(forest: &Vec<u8>, x: usize, i: usize) -> usize {
     v
 }
 
-fn up_left_views(forest: &Vec<u8>, width: usize) -> (Vec<usize>, Vec<usize>) {
+fn up_left_views(forest: &[u8], width: usize) -> (Vec<usize>, Vec<usize>) {
     let size = forest.len();
     let length = size / width;
 

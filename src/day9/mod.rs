@@ -138,16 +138,20 @@ impl Rope {
 }
 
 pub fn task1(input: &str) -> SolutionResult {
-    let mut rope: Rope = Rope::init();
+    let lines = input.lines();
+    let moves = lines.clone().map(|l| l.parse::<Move>().unwrap());
 
-    let res = input
-        .lines()
-        .map(|l| l.parse::<Move>().unwrap())
-        .flat_map(|m| {
-            let hist = rope.movement(m);
-            rope = hist.clone().last().unwrap();
-            hist
-        })
+    let hist_size = lines.count()*5; // approximation
+
+    let mut history: Vec<Rope> = Vec::with_capacity(hist_size);
+    history.push(Rope::init());
+
+    for m in moves {
+        history.extend(history.last().unwrap().movement(m));
+    }
+
+    let res = history
+        .iter()
         //.inspect(|r| println!("Head: {0}, Tail: {1}", r.head, r.tail))
         .unique_by(|r| r.tail)
         .count();

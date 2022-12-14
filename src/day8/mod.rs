@@ -73,50 +73,75 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(res)
 }
 
-fn sum_view<'a, T: Iterator<Item = &'a u8>>(mut iter: T) -> usize {
-    let tree = iter.next().unwrap();
-
-    let mut count = 0;
-    for t in iter {
-        count += 1;
-        if t >= tree {
+fn view_up(forest: &Vec<u8>, width: usize, mut i: usize) -> usize {
+    let tree = forest[i];
+    let mut v = 0;
+    while i >= width {
+        v += 1;
+        i -= width;
+        if forest[i] >= tree {
             break;
         }
     }
-    count
+
+    v
 }
 
-fn view_along_x(vec: &Vec<u8>, width: usize, x: usize, y: usize) -> usize {
-    let i = xy2i(x, y, width);
-    sum_view(vec[i - x..i + 1].iter().rev()) * sum_view(vec[i..i + (width - x)].iter())
+fn view_left(forest: &Vec<u8>, x: usize, i: usize) -> usize {
+    let tree = forest[i];
+    let mut v = 0;
+
+    for i in (i - x..i).rev() {
+        v += 1;
+        if forest[i] >= tree {
+            break;
+        }
+    }
+
+    v
 }
 
-fn view_along_y(vec: &Vec<u8>, width: usize, x: usize, y: usize) -> usize {
-    sum_view(vec.iter().skip(x).step_by(width).take(y + 1).rev())
-        * sum_view(vec.iter().skip(x).step_by(width).skip(y))
-}
+fn up_left_views(forest: &Vec<u8>, width: usize, size: usize) -> (Vec<usize>, Vec<usize>) {
+    let mut up_views: Vec<usize> = Vec::with_capacity(size);
+    let mut left_views: Vec<usize> = Vec::with_capacity(size);
 
-fn get_view_score(vec: &Vec<u8>, i: usize, width: usize) -> usize {
-    let (x, y) = i2xy(i, width);
+    for (i, tree) in forest.iter().enumerate() {
+        let (x, y) = i2xy(i, width);
 
-    let score = view_along_x(vec, width, x, y) * view_along_y(vec, width, x, y);
-    //println!("Tree {} has view score of: {score}", vec[i]);
-    return score;
+        if x == 0 {
+            left_views.push(0);
+        } else if forest[i - 1] >= *tree {
+            left_views.push(1);
+        } else {
+            left_views.push(view_left(forest, x, i));
+        }
+
+        if y == 0 {
+            up_views.push(0);
+        } else if forest[i - width] >= *tree {
+            up_views.push(1);
+        } else {
+            up_views.push(view_up(forest, width, i));
+        }
+    }
+
+    (up_views, left_views)
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    let (forest, width) = parse_forest(input);
+    let (mut forest, width) = parse_forest(input);
 
-    let res = forest
-        .iter()
-        .enumerate()
-        .map(|(i, _)| get_view_score(&forest, i, width))
+    let size = forest.len();
+    let (up_views, left_views) = up_left_views(&forest, width, size);
+    forest.reverse();
+    let (mut down_views, mut right_views) = up_left_views(&forest, width, size);
+    down_views.reverse();
+    right_views.reverse();
+
+    let res = (0..size)
+        .map(|i| up_views[i] * down_views[i] * left_views[i] * right_views[i])
         .max()
         .unwrap();
-    //.inspect(|(i, t)| {
-    //    let (x, y) = i2xy(*i, width);
-    //    println!("Tree visible at ({x}, {y}): {t}");
-    //})
 
     SolutionResult::Unsigned(res)
 }

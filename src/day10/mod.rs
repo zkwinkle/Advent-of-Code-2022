@@ -60,6 +60,7 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Signed(res)
 }
 
+#[allow(dead_code)]
 fn b2c(b: bool) -> char {
     match b {
         true => '#',
@@ -72,6 +73,8 @@ pub fn task2(input: &str) -> SolutionResult {
 
     for (i, x) in cycles.enumerate() {
         let pos = i % 40;
+
+        #[allow(unused_variables)]
         let pixel = (x - 1..=x + 1).contains(&(pos as i32));
 
         //print!("{}", b2c(pixel));

@@ -92,9 +92,9 @@ struct Rope<const N: usize> {
 
 impl<const N: usize> fmt::Display for Rope<N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\tHEAD:\t{}\n", self.head())?;
+        writeln!(f, "\tHEAD:\t{}", self.head())?;
         for i in 1..N - 1 {
-            write!(f, "\t{i}:\t{}\n", self.knots[i])?;
+            writeln!(f, "\t{i}:\t{}", self.knots[i])?;
         }
         write!(f, "\tTAIL:\t{}", self.tail())
     }

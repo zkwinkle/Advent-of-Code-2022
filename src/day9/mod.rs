@@ -86,44 +86,72 @@ impl Position {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct Rope {
-    head: Position,
-    tail: Position,
+struct Rope<const N: usize> {
+    knots: [Position; N],
 }
 
-fn build_rope_movement<F>(mut r: Rope, move_head: F, d: u8) -> impl Iterator<Item = Rope> + Clone
+impl<const N: usize> fmt::Display for Rope<N> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "\tHEAD:\t{}\n", self.head())?;
+        for i in 1..N - 1 {
+            write!(f, "\t{i}:\t{}\n", self.knots[i])?;
+        }
+        write!(f, "\tTAIL:\t{}", self.tail())
+    }
+}
+
+fn build_rope_movement<F, const N: usize>(
+    mut r: Rope<N>,
+    move_head: F,
+    d: u8,
+) -> impl Iterator<Item = Rope<N>> + Clone
 where
     F: Fn(Position) -> Position + Clone,
 {
     (0..d).map(move |_| {
-        r.head = move_head(r.head);
+        r.knots[0] = move_head(r.head());
 
-        match (r.head - r.tail).tuple() {
-            (-1..=1, -1..=1) => (),
-            (x @ (2 | -2), y @ -1..=1) => {
-                r.tail.y += y;
-                r.tail.x += x / 2;
+        for (i_h, i_t) in (0..N - 1).zip(1..N) {
+            match (r.knots[i_h] - r.knots[i_t]).tuple() {
+                (-1..=1, -1..=1) => (),
+                (x @ (2 | -2), y @ -1..=1) => {
+                    r.knots[i_t].y += y;
+                    r.knots[i_t].x += x / 2;
+                }
+                (x @ -1..=1, y @ (-2 | 2)) => {
+                    r.knots[i_t].y += y / 2;
+                    r.knots[i_t].x += x;
+                }
+                (x @ (-2 | 2), y @ (-2 | 2)) => {
+                    r.knots[i_t].y += y / 2;
+                    r.knots[i_t].x += x / 2;
+                }
+                _ => {
+                    panic!("build_rope_movement unexpected head-tail difference")
+                }
             }
-            (x @ -1..=1, y @ (-2 | 2)) => {
-                r.tail.y += y / 2;
-                r.tail.x += x;
-            }
-            _ => panic!("build_rope_movement unexpected head-tail difference"),
         }
 
         r
     })
 }
 
-impl Rope {
-    fn init() -> Rope {
+impl<const N: usize> Rope<N> {
+    fn init() -> Rope<N> {
         Rope {
-            head: Position::new(0, 0),
-            tail: Position::new(0, 0),
+            knots: [Position::new(0, 0); N],
         }
     }
 
-    fn movement(self, m: Move) -> impl Iterator<Item = Rope> + Clone {
+    fn head(&self) -> Position {
+        self.knots[0]
+    }
+
+    fn tail(&self) -> Position {
+        self.knots[N - 1]
+    }
+
+    fn movement(self, m: Move) -> impl Iterator<Item = Rope<N>> + Clone {
         let dist = m.get_distance();
         let f = match m {
             Move::Right(_) => |p: Position| Position { x: p.x + 1, y: p.y },
@@ -136,28 +164,31 @@ impl Rope {
     }
 }
 
-pub fn task1(input: &str) -> SolutionResult {
+pub fn solve<const N: usize>(input: &str) -> usize {
     let lines = input.lines();
     let moves = lines.clone().map(|l| l.parse::<Move>().unwrap());
 
-    let hist_size = lines.count()*5; // approximation
+    let hist_size = lines.count() * 5; // approximation
 
-    let mut history: Vec<Rope> = Vec::with_capacity(hist_size);
+    let mut history: Vec<Rope<N>> = Vec::with_capacity(hist_size);
     history.push(Rope::init());
 
     for m in moves {
         history.extend(history.last().unwrap().movement(m));
+        //println!("\n{m}\n{}", history.last().unwrap());
     }
 
-    let res = history
+    history
         .iter()
         //.inspect(|r| println!("Head: {0}, Tail: {1}", r.head, r.tail))
-        .unique_by(|r| r.tail)
-        .count();
+        .unique_by(|r| r.tail())
+        .count()
+}
 
-    SolutionResult::Unsigned(res)
+pub fn task1(input: &str) -> SolutionResult {
+    SolutionResult::Unsigned(solve::<2>(input))
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    SolutionResult::Unsigned(0)
+    SolutionResult::Unsigned(solve::<10>(input))
 }

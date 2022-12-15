@@ -25,11 +25,12 @@ mod day7;
 mod day8;
 mod day9;
 mod day10;
+mod day11;
 
 // change max day here
-const MAX_DAY: usize = 10;
-const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(10); // and here!
-const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(10); // and here!
+const MAX_DAY: usize = 11;
+const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(11); // and here!
+const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(11); // and here!
 
 fn main() {
     let args = Args::parse();

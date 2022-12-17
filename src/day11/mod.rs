@@ -5,26 +5,28 @@ use std::{
     ops::{Add, Div, Mul},
     str::FromStr,
     string::ParseError,
+    thread,
 };
 
 use crate::tooling::SolutionResult;
 
 type Num = u64;
 
+#[derive(Debug)]
 enum WorryManagement {
     Div(Num),
     Mod(Num),
 }
 
-#[derive(Debug)]
-enum Op<M: Mul, A: Add> {
+#[derive(Debug, Clone)]
+enum Op<M: Mul + Clone, A: Add + Clone> {
     Sum(A),
     Mul(M),
     Square,
 }
 
 #[derive(Debug)]
-struct Monkey<T: Div + Mul + Add> {
+struct Monkey<T: Div + Mul + Add + Clone> {
     id: usize,
     items: VecDeque<T>,
     operation: Op<T, T>,
@@ -35,9 +37,17 @@ struct Monkey<T: Div + Mul + Add> {
     inspections: usize,
 }
 
+// For simulating a single item at a time (optimization)
+#[derive(Debug)]
+struct Item {
+    worry_lvl: Num,
+    monkey: usize,
+    worry_management: WorryManagement,
+}
+
 impl<T> FromStr for Monkey<T>
 where
-    T: Div + Mul + Add + FromStr<Err: Debug>,
+    T: Div + Mul + Add + FromStr<Err: Debug> + Clone,
 {
     type Err = ParseError;
 
@@ -115,6 +125,18 @@ where
     }
 }
 
+impl<T: Div + Mul + Add + Clone> Monkey<T> {
+    fn clone_properties(&self) -> Monkey<T> {
+        Monkey {
+            id: self.id,
+            items: Default::default(),
+            operation: self.operation.clone(),
+            div_test: self.div_test.clone(),
+            inspections: Default::default(),
+        }
+    }
+}
+
 impl Monkey<Num> {
     fn round(monkeys: &mut [Self], worry_management: &WorryManagement) {
         for i in 0..monkeys.len() {
@@ -184,17 +206,63 @@ impl Monkey<Num> {
             }
         }
     }
+
+    fn single_item_sim(mut item: Item, monkeys: &Vec<Self>, rounds: usize) -> Vec<usize> {
+        let mut inspection_counts: Vec<usize> = Vec::with_capacity(monkeys.len());
+        for _ in monkeys {
+            inspection_counts.push(0)
+        }
+
+        for _ in 1..=rounds {
+            for monkey in monkeys {
+                if item.monkey != monkey.id {
+                    continue;
+                }
+
+                item.worry_lvl = match monkey.operation {
+                    Op::Sum(n) => item.worry_lvl + n,
+                    Op::Mul(n) => item.worry_lvl * n,
+                    Op::Square => item.worry_lvl * item.worry_lvl,
+                };
+
+                item.worry_lvl = match item.worry_management {
+                    WorryManagement::Div(d) => item.worry_lvl / d,
+                    WorryManagement::Mod(m) => item.worry_lvl % m,
+                };
+
+                //println!("Item after operation {0:?}: {item}", monkey.operation);
+
+                inspection_counts[item.monkey] += 1;
+
+                if item.worry_lvl % monkey.div_test.0 as Num == 0 {
+                    item.monkey = monkey.div_test.1;
+                } else {
+                    item.monkey = monkey.div_test.2;
+                }
+            }
+        }
+
+        inspection_counts
+    }
 }
 
-fn solve(
-    mut monkeys: Vec<Monkey<Num>>,
-    rounds: usize,
-    worry_management: WorryManagement,
-) -> SolutionResult {
-    //println!("Start: {monkeys:#?}");
+fn max2<T: PartialOrd + Default>(iter: impl Iterator<Item = T>) -> (T, T) {
+    iter.fold(
+        (Default::default(), Default::default()),
+        |maxes, count| match (count > maxes.0, count > maxes.1) {
+            (true, true) => (count, maxes.0),
+            (false, true) => (maxes.0, count),
+            (true, false) => panic!("Invalid finding max counts comparison"),
+            (false, false) => maxes,
+        },
+    )
+}
 
-    for _i in 1..=rounds {
-        Monkey::round(&mut monkeys, &worry_management);
+pub fn task1(input: &str) -> SolutionResult {
+    let mut monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
+
+    for _i in 1..=20 {
+        Monkey::round(&mut monkeys, &WorryManagement::Div(3));
         //println!("After Round #{_i}:\n{monkeys:#?}");
     }
 
@@ -202,25 +270,9 @@ fn solve(
     //    println!("Inspections of Monkey{}: {}", monkey.id, monkey.inspections);
     //}
 
-    let (first, second) =
-        monkeys
-            .iter()
-            .map(|m| m.inspections)
-            .fold((0, 0), |maxes, count| {
-                match (count > maxes.0, count > maxes.1) {
-                    (true, true) => (count, maxes.0),
-                    (false, true) => (maxes.0, count),
-                    (true, false) => panic!("Invalid finding max counts comparison"),
-                    (false, false) => maxes,
-                }
-            });
+    let (first, second) = max2(monkeys.iter().map(|m| m.inspections));
 
     SolutionResult::Unsigned(first * second)
-}
-
-pub fn task1(input: &str) -> SolutionResult {
-    let monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
-    solve(monkeys, 20, WorryManagement::Div(3))
 }
 
 pub fn task2(input: &str) -> SolutionResult {
@@ -228,7 +280,45 @@ pub fn task2(input: &str) -> SolutionResult {
 
     let worry_mod = monkeys.iter().fold(1, |mcm, m| mcm * m.div_test.0);
 
+    let items: Vec<Item> = monkeys
+        .iter()
+        .flat_map(|monkey| {
+            monkey.items.iter().map(|&item| Item {
+                worry_lvl: item,
+                monkey: monkey.id,
+                worry_management: WorryManagement::Mod(worry_mod),
+            })
+        })
+        .collect();
+
     //println!("MCM: {worry_mod}");
 
-    solve(monkeys, 10000, WorryManagement::Mod(worry_mod))
+    let amount = monkeys.len();
+
+    let inspection_counts: Vec<usize> = items
+        .into_iter()
+        .map(|item| {
+            let mut vec = Vec::with_capacity(monkeys.len());
+            for monkey in &monkeys {
+                vec.push(monkey.clone_properties());
+            }
+            thread::spawn(move || Monkey::single_item_sim(item, &vec, 10000))
+        })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .map(|handle| handle.join().unwrap())
+        //.inspect(|i| println!("Inspections after rounds: {i:?}"))
+        .fold(
+            [0].repeat(amount),
+            |mut counts: Vec<usize>, item_inspections: Vec<usize>| {
+                for (i, inspections) in item_inspections.iter().enumerate() {
+                    counts[i] += inspections;
+                }
+                counts
+            },
+        );
+
+    let (first, second) = max2(inspection_counts.into_iter());
+
+    SolutionResult::Unsigned(first * second)
 }

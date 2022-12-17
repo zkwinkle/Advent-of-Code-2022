@@ -9,7 +9,12 @@ use std::{
 
 use crate::tooling::SolutionResult;
 
-type Num = u32;
+type Num = u64;
+
+enum WorryManagement {
+    Div(Num),
+    Mod(Num),
+}
 
 #[derive(Debug)]
 enum Op<M: Mul, A: Add> {
@@ -111,7 +116,7 @@ where
 }
 
 impl Monkey<Num> {
-    fn round(monkeys: &mut [Self]) {
+    fn round(monkeys: &mut [Self], worry_management: &WorryManagement) {
         for i in 0..monkeys.len() {
             let monkey = &monkeys[i];
             let dt1 = monkey.div_test.1;
@@ -148,7 +153,7 @@ impl Monkey<Num> {
                     let (l, r) = r.split_at_mut(dt1);
                     (&mut rr[0], &mut r[0], &mut l[dt2])
                 }
-                (o1 , o2 , o3 ) => {
+                (o1, o2, o3) => {
                     eprintln!("Add this cmp branch: ({o1:?}, {o2:?}, {o3:?})");
                     panic!("Unexpected monkey division test ruling")
                 }
@@ -163,7 +168,12 @@ impl Monkey<Num> {
                     Op::Mul(n) => item * n,
                     Op::Square => item * item,
                 };
-                let item = item / 3;
+
+                let item = match worry_management {
+                    WorryManagement::Div(d) => item / d,
+                    WorryManagement::Mod(m) => item % m,
+                };
+
                 //println!("Item after operation {0:?}: {item}", monkey.operation);
 
                 if item % monkey.div_test.0 as Num == 0 {
@@ -176,14 +186,21 @@ impl Monkey<Num> {
     }
 }
 
-pub fn task1(input: &str) -> SolutionResult {
-    let mut monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
+fn solve(
+    mut monkeys: Vec<Monkey<Num>>,
+    rounds: usize,
+    worry_management: WorryManagement,
+) -> SolutionResult {
     //println!("Start: {monkeys:#?}");
 
-    for _i in 1..=20 {
-        Monkey::round(&mut monkeys);
+    for _i in 1..=rounds {
+        Monkey::round(&mut monkeys, &worry_management);
         //println!("After Round #{_i}:\n{monkeys:#?}");
     }
+
+    //for monkey in &monkeys {
+    //    println!("Inspections of Monkey{}: {}", monkey.id, monkey.inspections);
+    //}
 
     let (first, second) =
         monkeys
@@ -201,6 +218,17 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(first * second)
 }
 
+pub fn task1(input: &str) -> SolutionResult {
+    let monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
+    solve(monkeys, 20, WorryManagement::Div(3))
+}
+
 pub fn task2(input: &str) -> SolutionResult {
-    SolutionResult::Unsigned(0)
+    let monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
+
+    let worry_mod = monkeys.iter().fold(1, |mcm, m| mcm * m.div_test.0);
+
+    //println!("MCM: {worry_mod}");
+
+    solve(monkeys, 10000, WorryManagement::Mod(worry_mod))
 }

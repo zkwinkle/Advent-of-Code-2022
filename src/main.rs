@@ -1,6 +1,7 @@
 #![feature(iter_array_chunks)]
 #![feature(iter_next_chunk)]
 #![feature(anonymous_lifetime_in_impl_trait)]
+#![feature(associated_type_bounds)]
 
 use clap::Parser;
 use colored::Colorize;
@@ -36,7 +37,7 @@ fn main() {
     let args = Args::parse();
 
     if let Some(passes_opt) = args.bench {
-        let passes = passes_opt.unwrap_or(200);
+        let passes = passes_opt.unwrap_or(50);
         benchmarks(passes)
     } else {
         let day = match args.day {

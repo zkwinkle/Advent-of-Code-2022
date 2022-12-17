@@ -11,12 +11,6 @@ use crate::tooling::SolutionResult;
 
 type Num = u64;
 
-#[derive(Debug)]
-enum WorryManagement {
-    Div(Num),
-    Mod(Num),
-}
-
 #[derive(Debug, Clone)]
 enum Op<M: Mul + Clone, A: Add + Clone> {
     Sum(A),
@@ -124,7 +118,8 @@ where
 }
 
 impl Monkey<Num> {
-    fn round(monkeys: &mut [Self], worry_management: &WorryManagement) {
+    /// Used for task1
+    fn round(monkeys: &mut [Self]) {
         for i in 0..monkeys.len() {
             let monkey = &monkeys[i];
             let dt1 = monkey.div_test.1;
@@ -177,11 +172,7 @@ impl Monkey<Num> {
                     Op::Square => item * item,
                 };
 
-                let item = match worry_management {
-                    WorryManagement::Div(d) => item / d,
-                    WorryManagement::Mod(m) => item % m,
-                };
-
+                let item = item / 3;
                 //println!("Item after operation {0:?}: {item}", monkey.operation);
 
                 if item % monkey.div_test.0 as Num == 0 {
@@ -193,29 +184,11 @@ impl Monkey<Num> {
         }
     }
 
-    fn single_item_sim(
-        item: Item,
-        monkeys: &Vec<Self>,
-        rounds: usize,
-        worry_management: WorryManagement,
-    ) -> Vec<usize> {
-        let mut inspection_counts: Vec<usize> = Vec::with_capacity(monkeys.len());
-        for _ in monkeys {
-            inspection_counts.push(0)
-        }
+    /// Used for task2
+    fn single_item_sim(item: Item, monkeys: &Vec<Self>, rounds: usize, modulo: Num) -> Vec<usize> {
+        let mut inspection_counts: Vec<usize> = vec![0; monkeys.len()];
 
-        let mut count_inspections = |inspected: &Vec<bool>| {
-            for (i, &inspection) in inspected.iter().enumerate() {
-                if inspection {
-                    inspection_counts[i] += 1;
-                }
-            }
-        };
-
-        let mut inspected: Vec<bool> = Vec::with_capacity(monkeys.len());
-        for _ in monkeys {
-            inspected.push(false);
-        }
+        let mut inspected: Vec<bool> = vec![false; monkeys.len()];
 
         let f = |mut item: Item, mut inspected: Option<&mut Vec<bool>>| {
             if let Some(ref mut inspected) = inspected {
@@ -232,10 +205,7 @@ impl Monkey<Num> {
                     Op::Square => item.worry_lvl * item.worry_lvl,
                 };
 
-                item.worry_lvl = match worry_management {
-                    WorryManagement::Div(d) => item.worry_lvl / d,
-                    WorryManagement::Mod(m) => item.worry_lvl % m,
-                };
+                item.worry_lvl %=  modulo;
 
                 //println!("Item after operation {0:?}: {item}", monkey.operation);
                 if let Some(ref mut inspected) = inspected {
@@ -264,12 +234,6 @@ impl Monkey<Num> {
                 lam = 0
             }
             let next = f(hare, None);
-            if power >= rounds {
-                if lam == rounds {
-                    panic!("cycle longer than rounds, not worth finding");
-                }
-                count_inspections(&inspected);
-            }
             hare = next;
             lam += 1;
         }
@@ -329,7 +293,7 @@ pub fn task1(input: &str) -> SolutionResult {
     let mut monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
 
     for _i in 1..=20 {
-        Monkey::round(&mut monkeys, &WorryManagement::Div(3));
+        Monkey::round(&mut monkeys);
         //println!("After Round #{_i}:\n{monkeys:#?}");
     }
 
@@ -363,7 +327,7 @@ pub fn task2(input: &str) -> SolutionResult {
 
     let inspection_counts: Vec<usize> = items
         .into_iter()
-        .map(|item| Monkey::single_item_sim(item, &monkeys, 10000, WorryManagement::Mod(worry_mod)))
+        .map(|item| Monkey::single_item_sim(item, &monkeys, 10000, worry_mod))
         .fold(
             [0].repeat(amount),
             |mut counts: Vec<usize>, item_inspections: Vec<usize>| {

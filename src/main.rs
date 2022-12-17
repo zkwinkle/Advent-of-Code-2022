@@ -37,7 +37,7 @@ fn main() {
     let args = Args::parse();
 
     if let Some(passes_opt) = args.bench {
-        let passes = passes_opt.unwrap_or(50);
+        let passes = passes_opt.unwrap_or(100);
         benchmarks(passes)
     } else {
         let day = match args.day {

@@ -2,10 +2,9 @@ use std::{
     cmp::Ordering,
     collections::VecDeque,
     fmt::Debug,
-    ops::{Add, Div, Mul},
+    ops::{Add, Div, Mul, Range},
     str::FromStr,
     string::ParseError,
-    thread,
 };
 
 use crate::tooling::SolutionResult;
@@ -38,11 +37,10 @@ struct Monkey<T: Div + Mul + Add + Clone> {
 }
 
 // For simulating a single item at a time (optimization)
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Item {
     worry_lvl: Num,
     monkey: usize,
-    worry_management: WorryManagement,
 }
 
 impl<T> FromStr for Monkey<T>
@@ -125,18 +123,6 @@ where
     }
 }
 
-impl<T: Div + Mul + Add + Clone> Monkey<T> {
-    fn clone_properties(&self) -> Monkey<T> {
-        Monkey {
-            id: self.id,
-            items: Default::default(),
-            operation: self.operation.clone(),
-            div_test: self.div_test.clone(),
-            inspections: Default::default(),
-        }
-    }
-}
-
 impl Monkey<Num> {
     fn round(monkeys: &mut [Self], worry_management: &WorryManagement) {
         for i in 0..monkeys.len() {
@@ -207,13 +193,34 @@ impl Monkey<Num> {
         }
     }
 
-    fn single_item_sim(mut item: Item, monkeys: &Vec<Self>, rounds: usize) -> Vec<usize> {
+    fn single_item_sim(
+        item: Item,
+        monkeys: &Vec<Self>,
+        rounds: usize,
+        worry_management: WorryManagement,
+    ) -> Vec<usize> {
         let mut inspection_counts: Vec<usize> = Vec::with_capacity(monkeys.len());
         for _ in monkeys {
             inspection_counts.push(0)
         }
 
-        for _ in 1..=rounds {
+        let mut count_inspections = |inspected: &Vec<bool>| {
+            for (i, &inspection) in inspected.iter().enumerate() {
+                if inspection {
+                    inspection_counts[i] += 1;
+                }
+            }
+        };
+
+        let mut inspected: Vec<bool> = Vec::with_capacity(monkeys.len());
+        for _ in monkeys {
+            inspected.push(false);
+        }
+
+        let f = |mut item: Item, mut inspected: Option<&mut Vec<bool>>| {
+            if let Some(ref mut inspected) = inspected {
+                inspected.fill(false);
+            }
             for monkey in monkeys {
                 if item.monkey != monkey.id {
                     continue;
@@ -225,14 +232,15 @@ impl Monkey<Num> {
                     Op::Square => item.worry_lvl * item.worry_lvl,
                 };
 
-                item.worry_lvl = match item.worry_management {
+                item.worry_lvl = match worry_management {
                     WorryManagement::Div(d) => item.worry_lvl / d,
                     WorryManagement::Mod(m) => item.worry_lvl % m,
                 };
 
                 //println!("Item after operation {0:?}: {item}", monkey.operation);
-
-                inspection_counts[item.monkey] += 1;
+                if let Some(ref mut inspected) = inspected {
+                    inspected[item.monkey] = true;
+                }
 
                 if item.worry_lvl % monkey.div_test.0 as Num == 0 {
                     item.monkey = monkey.div_test.1;
@@ -240,6 +248,65 @@ impl Monkey<Num> {
                     item.monkey = monkey.div_test.2;
                 }
             }
+            item
+        };
+
+        // Brent's cycle detecting algorithm
+        let mut power = 1;
+        let mut lam = 1;
+        let mut tortoise = item;
+        let mut hare = f(item, None);
+
+        while tortoise != hare {
+            if power == lam {
+                tortoise = hare;
+                power *= 2;
+                lam = 0
+            }
+            let next = f(hare, None);
+            if power >= rounds {
+                if lam == rounds {
+                    panic!("cycle longer than rounds, not worth finding");
+                }
+                count_inspections(&inspected);
+            }
+            hare = next;
+            lam += 1;
+        }
+
+        tortoise = item;
+        hare = item;
+        for _ in 0..lam {
+            hare = f(hare, None);
+        }
+
+        let mut mu = 0;
+        while tortoise != hare {
+            tortoise = f(tortoise, None);
+            hare = f(hare, None);
+            mu += 1;
+        }
+
+        let mut item = item;
+        let mut count_inspections_range = |range: Range<usize>| {
+            range.fold(inspection_counts.clone(), |mut vec, _| {
+                item = f(item, Some(&mut inspected));
+                for (i, &inspection) in inspected.iter().enumerate() {
+                    if inspection {
+                        vec[i] += 1;
+                    }
+                }
+                vec
+            })
+        };
+        let mu_inspections = count_inspections_range(0..mu);
+        let cycle_inspections = count_inspections_range(0..lam);
+        let final_inspections = count_inspections_range(0..((rounds - mu) % lam));
+
+        for i in 0..inspection_counts.len() {
+            inspection_counts[i] = cycle_inspections[i] * ((rounds - mu) / lam)
+                + mu_inspections[i]
+                + final_inspections[i];
         }
 
         inspection_counts
@@ -286,7 +353,6 @@ pub fn task2(input: &str) -> SolutionResult {
             monkey.items.iter().map(|&item| Item {
                 worry_lvl: item,
                 monkey: monkey.id,
-                worry_management: WorryManagement::Mod(worry_mod),
             })
         })
         .collect();
@@ -297,17 +363,7 @@ pub fn task2(input: &str) -> SolutionResult {
 
     let inspection_counts: Vec<usize> = items
         .into_iter()
-        .map(|item| {
-            let mut vec = Vec::with_capacity(monkeys.len());
-            for monkey in &monkeys {
-                vec.push(monkey.clone_properties());
-            }
-            thread::spawn(move || Monkey::single_item_sim(item, &vec, 10000))
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
-        .map(|handle| handle.join().unwrap())
-        //.inspect(|i| println!("Inspections after rounds: {i:?}"))
+        .map(|item| Monkey::single_item_sim(item, &monkeys, 10000, WorryManagement::Mod(worry_mod)))
         .fold(
             [0].repeat(amount),
             |mut counts: Vec<usize>, item_inspections: Vec<usize>| {

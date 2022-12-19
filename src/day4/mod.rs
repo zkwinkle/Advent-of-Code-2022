@@ -1,4 +1,4 @@
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 use std::{num::ParseIntError, str::FromStr};
 
 #[derive(Debug)]

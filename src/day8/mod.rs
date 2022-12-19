@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 fn xy2i(x: usize, y: usize, width: usize) -> usize {
     y * width + x

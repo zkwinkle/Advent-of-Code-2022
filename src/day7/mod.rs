@@ -5,7 +5,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 type RcCell<T> = Rc<RefCell<T>>;
 type WeakCell<T> = Weak<RefCell<T>>;

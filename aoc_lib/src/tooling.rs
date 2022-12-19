@@ -1,3 +1,4 @@
+pub use seq_macro::seq;
 use std::fmt;
 
 pub enum SolutionResult {
@@ -18,9 +19,10 @@ impl fmt::Display for SolutionResult {
 
 pub type Solution = fn(&str) -> SolutionResult;
 
+#[macro_export]
 macro_rules! solutions {
     ($max_day:expr) => {
-            seq!(N in 1..=$max_day {
+        seq!(N in 1..=$max_day {
             [
             #([
                 |data: _| day~N::task1(data),
@@ -28,9 +30,10 @@ macro_rules! solutions {
             ],)*
         ]
             })
-    };
+    }
 }
 
+#[macro_export]
 macro_rules! inputs {
     ($max_day:expr) => {
             seq!(N in 1..=$max_day {
@@ -43,5 +46,9 @@ macro_rules! inputs {
             ,)*
         ]
             })
-    };
+    }
+}
+
+pub fn load_input(inputs: &[[&'static str; 2]], day: usize, load_test: bool) -> &'static str {
+    inputs[day - 1][load_test as usize]
 }

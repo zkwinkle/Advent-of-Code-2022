@@ -1,4 +1,4 @@
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 fn init_crates(lines: &mut impl Iterator<Item = &str>) -> Vec<Vec<char>> {
     let mut lines_peek = lines.peekable();

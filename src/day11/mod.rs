@@ -7,7 +7,7 @@ use std::{
     string::ParseError,
 };
 
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 type Num = u64;
 
@@ -205,7 +205,7 @@ impl Monkey<Num> {
                     Op::Square => item.worry_lvl * item.worry_lvl,
                 };
 
-                item.worry_lvl %=  modulo;
+                item.worry_lvl %= modulo;
 
                 //println!("Item after operation {0:?}: {item}", monkey.operation);
                 if let Some(ref mut inspected) = inspected {

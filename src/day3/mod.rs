@@ -1,4 +1,4 @@
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 fn find_repeat(iter1: &str, iter2: &str) -> char {
     iter1.chars().find(|&c1| iter2.contains(c1)).unwrap()

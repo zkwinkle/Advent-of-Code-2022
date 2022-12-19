@@ -1,4 +1,4 @@
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 #[derive(Clone, Copy)]
 enum Tool {

@@ -2,7 +2,7 @@ use std::{fmt, ops::Sub, str::FromStr, string::ParseError};
 
 use itertools::Itertools;
 
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 #[derive(Clone, Copy)]
 enum Move {

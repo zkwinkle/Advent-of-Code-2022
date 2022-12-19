@@ -2,7 +2,7 @@ use std::{fmt, str::FromStr, string::ParseError};
 
 use itertools::Either;
 
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 #[derive(Clone, Copy)]
 enum Instruction {

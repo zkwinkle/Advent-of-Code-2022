@@ -1,4 +1,4 @@
-use crate::tooling::SolutionResult;
+use aoc_lib::tooling::SolutionResult;
 
 pub fn task1(input: &str) -> SolutionResult {
     let mut lines = input.lines();

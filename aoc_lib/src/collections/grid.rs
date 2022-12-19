@@ -1,4 +1,4 @@
-use std::{ops::Index, slice::Iter};
+use std::ops::Index;
 
 /// 2D rectangular grid structure
 
@@ -22,10 +22,6 @@ impl<T> Grid<T> {
 
     pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
         self.elements.get_mut(xy2i(self.columns, x, y))
-    }
-
-    pub fn iter(&self) -> Iter<'_, T> {
-        self.elements.iter()
     }
 
     pub fn parse_grid<'a, I>(

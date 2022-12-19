@@ -9,4 +9,3 @@ edition = "2021"
 itertools = "0.10.5"
 aoc_lib = { path = "aoc_lib" }
 clap = { version = "4.0.29", features = ["derive"] }
-rustc-hash = "1.1.0"

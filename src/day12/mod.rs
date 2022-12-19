@@ -1,25 +1,15 @@
 use aoc_lib::{collections::grid::Grid, tooling::SolutionResult};
-use rustc_hash::{FxHashMap, FxHashSet};
-use std::{
-    collections::{HashMap, HashSet, VecDeque},
-    hash::{Hash, Hasher},
-    thread,
-};
 
 type Num = u32;
 
+use std::collections::VecDeque;
+
 #[derive(Clone, Copy, Debug)]
-struct Node {
+pub struct Node {
     x: usize,
     y: usize,
     elevation: Num,
-}
-
-impl Hash for Node {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.x.hash(state);
-        self.y.hash(state);
-    }
+    parent: Option<(usize, usize)>,
 }
 
 impl PartialEq for Node {
@@ -30,11 +20,12 @@ impl PartialEq for Node {
 
 impl Eq for Node {}
 impl Node {
-    fn new(x: usize, y: usize, elevation: char) -> Node {
+    pub fn new(x: usize, y: usize, elevation: char) -> Node {
         Node {
             x,
             y,
             elevation: elevation as Num,
+            parent: None,
         }
     }
 }
@@ -58,42 +49,42 @@ fn get_adjacent(grid: &Grid<Node>, origin: Node) -> impl Iterator<Item = Node> {
     .filter_map(move |n| n.filter(|&n| origin.elevation + 1 >= n.elevation))
 }
 
-fn count_path(came_from: FxHashMap<Node, Node>, end: Node) -> usize {
+fn reconstruct_path(grid: &Grid<Node>, end: Node) -> Vec<Node> {
     let mut current = end;
-    let mut count = 0;
-    while let Some(parent) = came_from.get(&current) {
-        current = *parent;
-        count += 1;
+    let mut total_path = vec![current];
+    while let Some(parent_xy) = current.parent {
+        // Root's parent is itself
+        if parent_xy.0 == current.x && parent_xy.1 == current.y {
+            break;
+        }
+        current = *grid.get(parent_xy.0, parent_xy.1).unwrap();
+        total_path.push(current)
     }
 
-    count
+    total_path.reverse();
+    total_path
 }
 
-fn bfs(grid: &Grid<Node>, root: Node, goal: Node) -> usize {
-    let mut q: VecDeque<Node> = VecDeque::with_capacity(100);
-    q.push_back(root);
-    let mut explored_nodes: FxHashSet<Node> =
-        HashSet::with_capacity_and_hasher(100, Default::default());
-    explored_nodes.insert(root);
-    let mut came_from: FxHashMap<Node, Node> =
-        HashMap::with_capacity_and_hasher(100, Default::default());
+pub fn bfs(mut grid: Grid<Node>, root: Node, goal: Node) -> Vec<Node> {
+    let root = grid.get_mut(root.x, root.y).unwrap();
+    root.parent = Some((root.x, root.y));
 
+    let mut q: VecDeque<Node> = [*root].into();
     while let Some(current) = q.pop_front() {
         if current == goal {
-            return count_path(came_from, current);
+            return reconstruct_path(&grid, current);
         }
 
         for neighbor in get_adjacent(&grid, current) {
-            if !explored_nodes.contains(&neighbor) {
-                q.push_back(neighbor);
-                explored_nodes.insert(neighbor);
-                came_from.insert(neighbor, current);
+            if neighbor.parent.is_none() {
+                let neighbor = grid.get_mut(neighbor.x, neighbor.y).unwrap();
+                neighbor.parent = Some((current.x, current.y));
+                q.push_back(*neighbor);
             }
         }
     }
 
-    // No more adjacent nodes but goal was never reached
-    usize::MAX
+    panic!("No more adjacent nodes but goal was never reached");
 }
 
 fn input2nodes(input: &str) -> impl Iterator<Item = Node> + '_ {
@@ -147,47 +138,11 @@ pub fn task1(input: &str) -> SolutionResult {
     let start = find_start(input);
     let end = find_end(input);
 
-    let path = bfs(&grid, start, end);
+    let path = bfs(grid, start, end);
 
-    SolutionResult::Unsigned(path)
+    //println!("Path: {path:?}");
+
+    SolutionResult::Unsigned(path.len() - 1)
 }
 
-fn find_starts(input: &str) -> impl Iterator<Item = Node> + '_ {
-    input
-        .lines()
-        .enumerate()
-        .filter_map(|(y, l)| {
-            Some(l.chars().enumerate().filter_map(move |(x, c)| {
-                if c == 'S' || c == 'a' {
-                    Some(Node::new(x, y, 'a'))
-                } else {
-                    None
-                }
-            }))
-        })
-        .flatten()
-}
-
-pub fn task2(input: &str) -> SolutionResult {
-    let grid: Grid<Node> = Grid::parse_grid(input, input2nodes);
-    let starts = find_starts(input);
-    let end = find_end(input);
-    let mut thread_count = 0;
-
-    let shortest_path = thread::scope(|scope| {
-        let grid = &grid;
-        let mut threads = Vec::with_capacity(50);
-        for start in starts {
-            thread_count += 1;
-            threads.push(scope.spawn(move || bfs(grid, start, end)));
-        }
-
-        threads
-            .into_iter()
-            .map(|thread| thread.join().unwrap())
-            .min()
-            .unwrap()
-    });
-
-    SolutionResult::Unsigned(shortest_path)
-}
+pub fn task2(input: &str) -> SolutionResult { SolutionResult::Unsigned(0) }

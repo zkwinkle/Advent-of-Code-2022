@@ -38,7 +38,8 @@ impl FromStr for Range {
 pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Signed(input.lines().fold(0, |acc, line| {
         let ranges: (&str, &str) = line.split_once(',').unwrap();
-        let ranges: (Range, Range) = (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
+        let ranges: (Range, Range) =
+            (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
 
         acc + if ranges.0.contains(&ranges.1) || ranges.1.contains(&ranges.0) {
             1
@@ -51,7 +52,8 @@ pub fn task1(input: &str) -> SolutionResult {
 pub fn task2(input: &str) -> SolutionResult {
     SolutionResult::Signed(input.lines().fold(0, |acc, line| {
         let ranges: (&str, &str) = line.split_once(',').unwrap();
-        let ranges: (Range, Range) = (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
+        let ranges: (Range, Range) =
+            (ranges.0.parse().unwrap(), ranges.1.parse().unwrap());
 
         //println!(
         //    "Ranges: {:?}\toverlap? {}",

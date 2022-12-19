@@ -70,7 +70,8 @@ impl<'a> File<'a> {
 
     fn get_files_mut(&mut self) -> &mut Vec<RcCell<File<'a>>> {
         match self {
-            File::Dir { ref mut files, .. } | File::Root { ref mut files, .. } => files,
+            File::Dir { ref mut files, .. }
+            | File::Root { ref mut files, .. } => files,
             File::Data { .. } => panic!("Called get_files_mut on non-dir file"),
         }
     }
@@ -78,7 +79,10 @@ impl<'a> File<'a> {
     /// Parsing function for files after 'ls' command. 'self' must be currently
     /// selected dir on which 'ls' is called. The iterator must not include any
     /// commands only files returned by 'ls'.
-    fn ls(parent: RcCell<File<'a>>, file_lines: &mut Peekable<impl Iterator<Item = &'a str>>) {
+    fn ls(
+        parent: RcCell<File<'a>>,
+        file_lines: &mut Peekable<impl Iterator<Item = &'a str>>,
+    ) {
         let mut binding = parent.borrow_mut();
         let files = binding.get_files_mut();
 
@@ -124,11 +128,9 @@ impl<'a> File<'a> {
                 ref mut size,
                 ..
             } => {
-                *size = Some(
-                    files
-                        .iter()
-                        .fold(0, |total, file| total + file.borrow_mut().init_sizes()),
-                );
+                *size = Some(files.iter().fold(0, |total, file| {
+                    total + file.borrow_mut().init_sizes()
+                }));
                 size.unwrap()
             }
             File::Data { data, .. } => *data,
@@ -226,6 +228,9 @@ pub fn task2(input: &str) -> SolutionResult {
     let root = parse(input);
 
     let thresh = root.borrow().get_size() - (SPACE_AVAILABLE - SPACE_NEEDED);
-    let res = SolutionResult::Unsigned(get_smallest_over_thresh(&root.borrow(), thresh));
+    let res = SolutionResult::Unsigned(get_smallest_over_thresh(
+        &root.borrow(),
+        thresh,
+    ));
     res
 }

@@ -29,9 +29,12 @@ fn find_badge(lines: &[&str; 3]) -> char {
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    SolutionResult::Signed(input.lines().array_chunks::<3>().fold(0, |acc, ref lines| {
-        let repeat_char = find_badge(lines);
-        //println!( "Repeat char found in lines {:?}: '{}'\tValue:{}", &lines, repeat_char, get_priority(repeat_char));
-        acc + get_priority(repeat_char)
-    }))
+    SolutionResult::Signed(input.lines().array_chunks::<3>().fold(
+        0,
+        |acc, ref lines| {
+            let repeat_char = find_badge(lines);
+            //println!( "Repeat char found in lines {:?}: '{}'\tValue:{}", &lines, repeat_char, get_priority(repeat_char));
+            acc + get_priority(repeat_char)
+        },
+    ))
 }

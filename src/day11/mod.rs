@@ -77,12 +77,13 @@ where
             .trim_start_matches("Operation: new = old ")
             .split_ascii_whitespace();
 
-        let operation = match (operation.next().unwrap(), operation.next().unwrap()) {
-            ("*", "old") => Op::Square,
-            ("*", num) => Op::Mul(num.trim().parse().unwrap()),
-            ("+", num) => Op::Sum(num.trim().parse().unwrap()),
-            (_, _) => panic!("Unexpected operation"),
-        };
+        let operation =
+            match (operation.next().unwrap(), operation.next().unwrap()) {
+                ("*", "old") => Op::Square,
+                ("*", num) => Op::Mul(num.trim().parse().unwrap()),
+                ("+", num) => Op::Sum(num.trim().parse().unwrap()),
+                (..) => panic!("Unexpected operation"),
+            };
 
         let divisor = lines
             .next()
@@ -125,42 +126,50 @@ impl Monkey<Num> {
             let dt1 = monkey.div_test.1;
             let dt2 = monkey.div_test.2;
 
-            let (monkey, m1, m2) = match (dt1.cmp(&monkey.id), dt2.cmp(&monkey.id), dt1.cmp(&dt2)) {
-                (Ordering::Less, Ordering::Greater, _) => {
-                    let (r, rr) = monkeys.split_at_mut(dt2);
-                    let (l, r) = r.split_at_mut(i);
-                    (&mut r[0], &mut l[dt1], &mut rr[0])
-                }
-                (Ordering::Greater, Ordering::Less, _) => {
-                    let (r, rr) = monkeys.split_at_mut(dt1);
-                    let (l, r) = r.split_at_mut(i);
-                    (&mut r[0], &mut rr[0], &mut l[dt2])
-                }
-                (Ordering::Greater, Ordering::Greater, Ordering::Greater) => {
-                    let (r, rr) = monkeys.split_at_mut(dt1);
-                    let (l, r) = r.split_at_mut(dt2);
-                    (&mut l[i], &mut rr[0], &mut r[0])
-                }
-                (Ordering::Greater, Ordering::Greater, Ordering::Less) => {
-                    let (r, rr) = monkeys.split_at_mut(dt2);
-                    let (l, r) = r.split_at_mut(dt1);
-                    (&mut l[i], &mut r[0], &mut rr[0])
-                }
-                (Ordering::Less, Ordering::Less, Ordering::Less) => {
-                    let (r, rr) = monkeys.split_at_mut(i);
-                    let (l, r) = r.split_at_mut(dt2);
-                    (&mut rr[0], &mut l[dt1], &mut r[0])
-                }
-                (Ordering::Less, Ordering::Less, Ordering::Greater) => {
-                    let (r, rr) = monkeys.split_at_mut(i);
-                    let (l, r) = r.split_at_mut(dt1);
-                    (&mut rr[0], &mut r[0], &mut l[dt2])
-                }
-                (o1, o2, o3) => {
-                    eprintln!("Add this cmp branch: ({o1:?}, {o2:?}, {o3:?})");
-                    panic!("Unexpected monkey division test ruling")
-                }
-            };
+            let (monkey, m1, m2) =
+                match (dt1.cmp(&monkey.id), dt2.cmp(&monkey.id), dt1.cmp(&dt2))
+                {
+                    (Ordering::Less, Ordering::Greater, _) => {
+                        let (r, rr) = monkeys.split_at_mut(dt2);
+                        let (l, r) = r.split_at_mut(i);
+                        (&mut r[0], &mut l[dt1], &mut rr[0])
+                    }
+                    (Ordering::Greater, Ordering::Less, _) => {
+                        let (r, rr) = monkeys.split_at_mut(dt1);
+                        let (l, r) = r.split_at_mut(i);
+                        (&mut r[0], &mut rr[0], &mut l[dt2])
+                    }
+                    (
+                        Ordering::Greater,
+                        Ordering::Greater,
+                        Ordering::Greater,
+                    ) => {
+                        let (r, rr) = monkeys.split_at_mut(dt1);
+                        let (l, r) = r.split_at_mut(dt2);
+                        (&mut l[i], &mut rr[0], &mut r[0])
+                    }
+                    (Ordering::Greater, Ordering::Greater, Ordering::Less) => {
+                        let (r, rr) = monkeys.split_at_mut(dt2);
+                        let (l, r) = r.split_at_mut(dt1);
+                        (&mut l[i], &mut r[0], &mut rr[0])
+                    }
+                    (Ordering::Less, Ordering::Less, Ordering::Less) => {
+                        let (r, rr) = monkeys.split_at_mut(i);
+                        let (l, r) = r.split_at_mut(dt2);
+                        (&mut rr[0], &mut l[dt1], &mut r[0])
+                    }
+                    (Ordering::Less, Ordering::Less, Ordering::Greater) => {
+                        let (r, rr) = monkeys.split_at_mut(i);
+                        let (l, r) = r.split_at_mut(dt1);
+                        (&mut rr[0], &mut r[0], &mut l[dt2])
+                    }
+                    (o1, o2, o3) => {
+                        eprintln!(
+                            "Add this cmp branch: ({o1:?}, {o2:?}, {o3:?})"
+                        );
+                        panic!("Unexpected monkey division test ruling")
+                    }
+                };
 
             monkey.inspections += monkey.items.len();
 
@@ -185,7 +194,12 @@ impl Monkey<Num> {
     }
 
     /// Used for task2
-    fn single_item_sim(item: Item, monkeys: &Vec<Self>, rounds: usize, modulo: Num) -> Vec<usize> {
+    fn single_item_sim(
+        item: Item,
+        monkeys: &Vec<Self>,
+        rounds: usize,
+        modulo: Num,
+    ) -> Vec<usize> {
         let mut inspection_counts: Vec<usize> = vec![0; monkeys.len()];
 
         let mut inspected: Vec<bool> = vec![false; monkeys.len()];
@@ -265,7 +279,8 @@ impl Monkey<Num> {
         };
         let mu_inspections = count_inspections_range(0..mu);
         let cycle_inspections = count_inspections_range(0..lam);
-        let final_inspections = count_inspections_range(0..((rounds - mu) % lam));
+        let final_inspections =
+            count_inspections_range(0..((rounds - mu) % lam));
 
         for i in 0..inspection_counts.len() {
             inspection_counts[i] = cycle_inspections[i] * ((rounds - mu) / lam)
@@ -290,7 +305,8 @@ fn max2<T: PartialOrd + Default>(iter: impl Iterator<Item = T>) -> (T, T) {
 }
 
 pub fn task1(input: &str) -> SolutionResult {
-    let mut monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
+    let mut monkeys: Vec<Monkey<Num>> =
+        input.split("\n\n").map(|s| s.parse().unwrap()).collect();
 
     for _i in 1..=20 {
         Monkey::round(&mut monkeys);
@@ -307,7 +323,8 @@ pub fn task1(input: &str) -> SolutionResult {
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    let monkeys: Vec<Monkey<Num>> = input.split("\n\n").map(|s| s.parse().unwrap()).collect();
+    let monkeys: Vec<Monkey<Num>> =
+        input.split("\n\n").map(|s| s.parse().unwrap()).collect();
 
     let worry_mod = monkeys.iter().fold(1, |mcm, m| mcm * m.div_test.0);
 

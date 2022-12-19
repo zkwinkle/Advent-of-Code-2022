@@ -2,9 +2,7 @@ use itertools::Itertools;
 
 use aoc_lib::tooling::SolutionResult;
 
-fn xy2i(x: usize, y: usize, width: usize) -> usize {
-    y * width + x
-}
+fn xy2i(x: usize, y: usize, width: usize) -> usize { y * width + x }
 
 fn parse_forest(input: &str) -> (Vec<u8>, usize) {
     let lines = input.lines();
@@ -89,7 +87,13 @@ pub fn task1(input: &str) -> SolutionResult {
         .enumerate()
         //.inspect(|&(i, ((y,x), t))| println!("({x},{y}): {t} (#{i})"))
         .filter(|&(i, ((y, x), t))| {
-            check_visibility(t, (i, x, y), width, length, (&up, &down, &left, &right))
+            check_visibility(
+                t,
+                (i, x, y),
+                width,
+                length,
+                (&up, &down, &left, &right),
+            )
         })
         //.inspect(|(i, t)| {
         //    let (x, y) = i2xy(*i, width);

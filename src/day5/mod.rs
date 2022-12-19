@@ -69,13 +69,15 @@ pub fn task2(input: &str) -> SolutionResult {
 
         // Getting the specific stacks using split_at_mut is a bit clunky
         let (from, to) = if instructions[1] < instructions[2] {
-            let (first_half, second_half) = stacks.split_at_mut(instructions[2] - 1);
+            let (first_half, second_half) =
+                stacks.split_at_mut(instructions[2] - 1);
             (
                 first_half.get_mut(instructions[1] - 1).unwrap(),
                 second_half.get_mut(0).unwrap(),
             )
         } else {
-            let (first_half, second_half) = stacks.split_at_mut(instructions[1] - 1);
+            let (first_half, second_half) =
+                stacks.split_at_mut(instructions[1] - 1);
             (
                 second_half.get_mut(0).unwrap(),
                 first_half.get_mut(instructions[2] - 1).unwrap(),

@@ -49,6 +49,10 @@ macro_rules! inputs {
     }
 }
 
-pub fn load_input(inputs: &[[&'static str; 2]], day: usize, load_test: bool) -> &'static str {
+pub fn load_input(
+    inputs: &[[&'static str; 2]],
+    day: usize,
+    load_test: bool,
+) -> &'static str {
     inputs[day - 1][load_test as usize]
 }

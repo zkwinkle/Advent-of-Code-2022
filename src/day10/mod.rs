@@ -31,7 +31,9 @@ impl FromStr for Instruction {
     }
 }
 
-fn generate_cycles(iter: impl Iterator<Item = Instruction>) -> impl Iterator<Item = i32> {
+fn generate_cycles(
+    iter: impl Iterator<Item = Instruction>,
+) -> impl Iterator<Item = i32> {
     let mut x_reg = 1;
 
     (1..=1).chain(
@@ -69,7 +71,8 @@ fn b2c(b: bool) -> char {
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    let cycles = generate_cycles(input.lines().map(|l| l.parse().unwrap())).take(240);
+    let cycles =
+        generate_cycles(input.lines().map(|l| l.parse().unwrap())).take(240);
 
     for (i, x) in cycles.enumerate() {
         let pos = i % 40;

@@ -76,13 +76,9 @@ impl Sub for Position {
 }
 
 impl Position {
-    fn tuple(self) -> (i32, i32) {
-        (self.x, self.y)
-    }
+    fn tuple(self) -> (i32, i32) { (self.x, self.y) }
 
-    fn new(x: i32, y: i32) -> Position {
-        Position { x, y }
-    }
+    fn new(x: i32, y: i32) -> Position { Position { x, y } }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -127,7 +123,9 @@ where
                     r.knots[i_t].x += x / 2;
                 }
                 _ => {
-                    panic!("build_rope_movement unexpected head-tail difference")
+                    panic!(
+                        "build_rope_movement unexpected head-tail difference"
+                    )
                 }
             }
         }
@@ -143,13 +141,9 @@ impl<const N: usize> Rope<N> {
         }
     }
 
-    fn head(&self) -> Position {
-        self.knots[0]
-    }
+    fn head(&self) -> Position { self.knots[0] }
 
-    fn tail(&self) -> Position {
-        self.knots[N - 1]
-    }
+    fn tail(&self) -> Position { self.knots[N - 1] }
 
     fn movement(self, m: Move) -> impl Iterator<Item = Rope<N>> + Clone {
         let dist = m.get_distance();

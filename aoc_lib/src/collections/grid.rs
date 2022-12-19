@@ -9,18 +9,12 @@ pub struct Grid<T> {
     columns: usize,
 }
 
-fn xy2i(columns: usize, x: usize, y: usize) -> usize {
-    y * columns + x
-}
+fn xy2i(columns: usize, x: usize, y: usize) -> usize { y * columns + x }
 
 impl<T> Grid<T> {
-    pub fn rows(&self) -> usize {
-        self.rows
-    }
+    pub fn rows(&self) -> usize { self.rows }
 
-    pub fn columns(&self) -> usize {
-        self.columns
-    }
+    pub fn columns(&self) -> usize { self.columns }
 
     pub fn get(&self, x: usize, y: usize) -> Option<&T> {
         self.elements.get(xy2i(self.columns, x, y))
@@ -30,7 +24,10 @@ impl<T> Grid<T> {
         self.elements.get_mut(xy2i(self.columns, x, y))
     }
 
-    pub fn parse_grid<'a, I>(input: &'a str, map_fn: impl Fn(&'a str) -> I) -> Grid<T>
+    pub fn parse_grid<'a, I>(
+        input: &'a str,
+        map_fn: impl Fn(&'a str) -> I,
+    ) -> Grid<T>
     where
         I: Iterator<Item = T>,
     {

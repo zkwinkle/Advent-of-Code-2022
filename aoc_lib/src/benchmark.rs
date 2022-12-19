@@ -6,7 +6,11 @@ use std::{
 
 use crate::tooling::{load_input, Solution};
 
-pub fn benchmarks(inputs: &[[&'static str; 2]], solutions: &[[Solution; 2]], passes: u32) {
+pub fn benchmarks(
+    inputs: &[[&'static str; 2]],
+    solutions: &[[Solution; 2]],
+    passes: u32,
+) {
     if cfg!(debug_assertions) {
         eprintln!("{}: Benchmarking in debug build", "WARNING".yellow().bold());
     }

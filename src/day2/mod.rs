@@ -89,8 +89,10 @@ pub fn task2(input: &str) -> SolutionResult {
     // Tuple (current_sum, elves_calories_vec)
     SolutionResult::Signed(input.lines().fold(0, |score, line| {
         let mut letters = line.trim().chars();
-        let (other, my) =
-            Tool::from_chars_task2((letters.next().unwrap(), letters.last().unwrap()));
+        let (other, my) = Tool::from_chars_task2((
+            letters.next().unwrap(),
+            letters.last().unwrap(),
+        ));
         score + my.fight(other)
     }))
 }

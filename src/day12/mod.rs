@@ -107,19 +107,14 @@ mod a_star {
             .0
     }
 
-    fn get_neighbors(grid: &Grid<Node>, origin: Node) -> impl Iterator<Item = Node> + '_ {
+    fn get_neighbors(
+        grid: &Grid<Node>,
+        origin: Node,
+    ) -> impl Iterator<Item = Node> + '_ {
         [
-            if origin.x != 0 {
-                grid.get(origin.x - 1, origin.y)
-            } else {
-                None
-            },
+            if origin.x != 0 { grid.get(origin.x - 1, origin.y) } else { None },
             grid.get(origin.x + 1, origin.y),
-            if origin.y != 0 {
-                grid.get(origin.x, origin.y - 1)
-            } else {
-                None
-            },
+            if origin.y != 0 { grid.get(origin.x, origin.y - 1) } else { None },
             grid.get(origin.x, origin.y + 1),
         ]
         .into_iter()
@@ -158,7 +153,9 @@ mod a_star {
                     .saturating_add(current.distance(&neighbor));
 
                 //println!("Neighbor {neighbor:?}: {tentative_g_score}");
-                if tentative_g_score < *g_score.get(&neighbor).unwrap_or(&Num::MAX) {
+                if tentative_g_score
+                    < *g_score.get(&neighbor).unwrap_or(&Num::MAX)
+                {
                     //f_score.insert(neighbor, tentative_g_score + h(neighbor));
                     neighbor.f_score = tentative_g_score + h(neighbor);
                     came_from.insert(neighbor, current);
@@ -252,6 +249,4 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(path.len() - 1)
 }
 
-pub fn task2(input: &str) -> SolutionResult {
-    SolutionResult::Unsigned(0)
-}
+pub fn task2(input: &str) -> SolutionResult { SolutionResult::Unsigned(0) }

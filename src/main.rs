@@ -11,6 +11,7 @@ use aoc_lib::{benchmark::benchmarks, inputs, solutions, tooling::*};
 mod day1;
 mod day10;
 mod day11;
+mod day12;
 mod day2;
 mod day3;
 mod day4;
@@ -21,9 +22,9 @@ mod day8;
 mod day9;
 
 // change max day here
-const MAX_DAY: usize = 11;
-const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(11); // and here!
-const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(11); // and here!
+const MAX_DAY: usize = 12;
+const SOLUTIONS: [[Solution; 2]; MAX_DAY] = solutions!(12); // and here!
+const INPUTS: [[&str; 2]; MAX_DAY] = inputs!(12); // and here!
 
 fn main() {
     let args = Args::parse();

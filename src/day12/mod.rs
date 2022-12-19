@@ -150,19 +150,17 @@ pub fn task1(input: &str) -> SolutionResult {
 }
 
 fn invert_char(input: char) -> char {
-    let a = 'a' as u8;
-    let z = 'z' as u8;
+    let a = b'a';
+    let z = b'z';
     let mid = (z - a) / 2 + a;
 
     let input = input as u8;
 
-    let inv = if input <= mid {
+    if input <= mid {
         (input + ((mid - input) * 2) + 1) as char
     } else {
         (input - ((input - mid) * 2 - 1)) as char
-    };
-
-    inv
+    }
 }
 
 fn input2nodes_inverse(input: &str) -> impl Iterator<Item = Node> + '_ {

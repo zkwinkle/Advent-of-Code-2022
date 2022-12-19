@@ -65,13 +65,17 @@ fn reconstruct_path(grid: &Grid<Node>, end: Node) -> Vec<Node> {
     total_path
 }
 
-pub fn bfs(mut grid: Grid<Node>, root: Node, goal: Node) -> Vec<Node> {
+pub fn bfs<F: Fn(Node) -> bool>(
+    mut grid: Grid<Node>,
+    root: Node,
+    reached_goal: F,
+) -> Vec<Node> {
     let root = grid.get_mut(root.x, root.y).unwrap();
     root.parent = Some((root.x, root.y));
 
     let mut q: VecDeque<Node> = [*root].into();
     while let Some(current) = q.pop_front() {
-        if current == goal {
+        if reached_goal(current) {
             return reconstruct_path(&grid, current);
         }
 
@@ -136,13 +140,52 @@ fn find_end(input: &str) -> Node {
 pub fn task1(input: &str) -> SolutionResult {
     let grid: Grid<Node> = Grid::parse_grid(input, input2nodes);
     let start = find_start(input);
+
     let end = find_end(input);
+    let finish_fn = |n| n == end;
 
-    let path = bfs(grid, start, end);
-
-    //println!("Path: {path:?}");
+    let path = bfs(grid, start, finish_fn);
 
     SolutionResult::Unsigned(path.len() - 1)
 }
 
-pub fn task2(input: &str) -> SolutionResult { SolutionResult::Unsigned(0) }
+fn invert_char(input: char) -> char {
+    let a = 'a' as u8;
+    let z = 'z' as u8;
+    let mid = (z - a) / 2 + a;
+
+    let input = input as u8;
+
+    let inv = if input <= mid {
+        (input + ((mid - input) * 2) + 1) as char
+    } else {
+        (input - ((input - mid) * 2 - 1)) as char
+    };
+
+    inv
+}
+
+fn input2nodes_inverse(input: &str) -> impl Iterator<Item = Node> + '_ {
+    input.lines().enumerate().flat_map(|(y, l)| {
+        l.chars().enumerate().map(move |(x, c)| {
+            let elevation = match c {
+                'S' => 'z',
+                'E' => 'a',
+                c @ 'a'..='z' => invert_char(c),
+                _ => panic!("Unexpected char while parsing input"),
+            };
+            Node::new(x, y, elevation)
+        })
+    })
+}
+
+pub fn task2(input: &str) -> SolutionResult {
+    let grid: Grid<Node> = Grid::parse_grid(input, input2nodes_inverse);
+
+    let start = find_end(input);
+    let finish_fn = |n: Node| n.elevation == 'z' as Num;
+
+    let path = bfs(grid, start, finish_fn);
+
+    SolutionResult::Unsigned(path.len() - 1)
+}

@@ -2,39 +2,6 @@ use aoc_lib::{collections::grid::Grid, tooling::SolutionResult};
 
 type Num = u32;
 
-#[derive(Clone, Copy, Debug)]
-struct Node {
-    f_score: Num,
-    x: usize,
-    y: usize,
-    elevation: Num,
-}
-
-impl Node {
-    fn new(x: usize, y: usize, elevation: char) -> Node {
-        Node {
-            x,
-            y,
-            elevation: elevation as Num,
-            f_score: Num::MAX,
-        }
-    }
-
-    // assumes other is neighbor
-    fn distance(&self, other: &Self) -> Num {
-        if !(self.x <= other.x + 1 && other.x <= self.x + 1) {
-            return Num::MAX;
-        }
-        if !(self.y <= other.y + 1 && other.y <= self.y + 1) {
-            return Num::MAX;
-        }
-        if !(self.elevation + 1 >= other.elevation) {
-            return Num::MAX;
-        }
-        1
-    }
-}
-
 #[allow(dead_code)]
 mod a_star {
     use std::{
@@ -45,7 +12,40 @@ mod a_star {
 
     use aoc_lib::collections::grid::Grid;
 
-    use super::{Node, Num};
+    use super::Num;
+
+    #[derive(Clone, Copy, Debug)]
+    pub struct Node {
+        f_score: Num,
+        x: usize,
+        y: usize,
+        elevation: Num,
+    }
+
+    impl Node {
+        pub fn new(x: usize, y: usize, elevation: char) -> Node {
+            Node {
+                x,
+                y,
+                elevation: elevation as Num,
+                f_score: Num::MAX,
+            }
+        }
+
+        // assumes other is neighbor
+        fn distance(&self, other: &Self) -> Num {
+            if !(self.x <= other.x + 1 && other.x <= self.x + 1) {
+                return Num::MAX;
+            }
+            if !(self.y <= other.y + 1 && other.y <= self.y + 1) {
+                return Num::MAX;
+            }
+            if !(self.elevation + 1 >= other.elevation) {
+                return Num::MAX;
+            }
+            1
+        }
+    }
 
     type Map<T> = HashMap<Node, T>;
     type Set = BinaryHeap<Reverse<Node>>;
@@ -175,6 +175,113 @@ mod a_star {
     }
 }
 
+mod bfs {
+    use std::collections::VecDeque;
+
+    use aoc_lib::collections::grid::Grid;
+
+    use super::Num;
+
+    #[derive(Clone, Copy, Debug)]
+    pub struct Node {
+        x: usize,
+        y: usize,
+        elevation: Num,
+        parent: Option<(usize, usize)>,
+    }
+
+    impl PartialEq for Node {
+        fn eq(&self, other: &Self) -> bool {
+            self.x == other.x && self.y == other.y
+        }
+    }
+
+    impl Eq for Node {}
+    impl Node {
+        pub fn new(x: usize, y: usize, elevation: char) -> Node {
+            Node {
+                x,
+                y,
+                elevation: elevation as Num,
+                parent: None,
+            }
+        }
+    }
+
+    fn get_adjacent(
+        grid: &Grid<Node>,
+        origin: Node,
+    ) -> impl Iterator<Item = Node> {
+        [
+            if origin.x != 0 {
+                grid.get(origin.x - 1, origin.y).cloned()
+            } else {
+                None
+            },
+            grid.get(origin.x + 1, origin.y).cloned(),
+            if origin.y != 0 {
+                grid.get(origin.x, origin.y - 1).cloned()
+            } else {
+                None
+            },
+            grid.get(origin.x, origin.y + 1).cloned(),
+        ]
+        .into_iter()
+        .filter_map(move |n| {
+            if let Some(n) = n {
+                if origin.elevation + 1 >= n.elevation {
+                    Some(n)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+    }
+
+    fn reconstruct_path(grid: &Grid<Node>, end: Node) -> Vec<Node> {
+        let mut current = end;
+        let mut total_path = vec![current];
+        while let Some(parent_xy) = current.parent {
+            // Root's parent is itself
+            if parent_xy.0 == current.x && parent_xy.1 == current.y {
+                break;
+            }
+            current = *grid.get(parent_xy.0, parent_xy.1).unwrap();
+            total_path.push(current)
+        }
+
+        total_path.reverse();
+        total_path
+    }
+
+    pub fn bfs(mut grid: Grid<Node>, root: Node, goal: Node) -> Vec<Node> {
+        let root = grid.get_mut(root.x, root.y).unwrap();
+        root.parent = Some((root.x, root.y));
+
+        let mut q: VecDeque<Node> = [root.clone()].into();
+        while let Some(current) = q.pop_front() {
+            if current == goal {
+                return reconstruct_path(&grid, current);
+            }
+
+            for neighbor in get_adjacent(&grid, current) {
+                if let None = neighbor.parent {
+                    let neighbor =
+                        grid.get_mut(neighbor.x, neighbor.y).unwrap();
+                    neighbor.parent = Some((current.x, current.y));
+                    q.push_back(*neighbor);
+                }
+            }
+        }
+
+        panic!("No more adjacent nodes but goal was never reached");
+    }
+}
+
+use bfs::Node;
+
 fn input2nodes<'s>(input: &'s str) -> impl Iterator<Item = Node> + 's {
     input.lines().enumerate().flat_map(|(y, l)| {
         l.chars().enumerate().map(move |(x, c)| {
@@ -184,7 +291,7 @@ fn input2nodes<'s>(input: &'s str) -> impl Iterator<Item = Node> + 's {
                 c @ 'a'..='z' => c,
                 _ => panic!("Unexpected char while parsing input"),
             };
-            Node::new(x, y, elevation)
+            bfs::Node::new(x, y, elevation)
         })
     })
 }
@@ -226,25 +333,9 @@ pub fn task1(input: &str) -> SolutionResult {
     let start = find_start(input);
     let end = find_end(input);
 
-    let heuristic = |_n: Node| -> Num {
-        0 // using a real heuristic made it slower T_T
-
-        //let h1 = end.x.saturating_sub(n.x);
-        //let h2 = n.x.saturating_sub(end.x);
-        //let h = h1 | h2;
-
-        //let v1 = end.y.saturating_sub(n.y);
-        //let v2 = n.y.saturating_sub(end.y);
-        //let v = v1 | v2;
-
-        //(h + v) as Num
-    };
-
-    let path = a_star::a_star(grid, start, end, heuristic);
+    let path = bfs::bfs(grid, start, end);
 
     //println!("Path: {path:?}");
-
-    // TODO change to use Breadth First Search, A* is too complicated and bad for this
 
     SolutionResult::Unsigned(path.len() - 1)
 }

@@ -40,7 +40,7 @@ mod a_star {
             if !(self.y <= other.y + 1 && other.y <= self.y + 1) {
                 return Num::MAX;
             }
-            if !(self.elevation + 1 >= other.elevation) {
+            if self.elevation + 1 < other.elevation {
                 return Num::MAX;
             }
             1
@@ -130,15 +130,15 @@ mod a_star {
         let start = grid.get_mut(start.x, start.y).unwrap();
         start.f_score = h(*start);
 
-        let mut open_set: Set = [Reverse(start.clone())].into();
+        let mut open_set: Set = [Reverse(*start)].into();
         let mut came_from: Map<Node> = Map::new();
 
         let mut g_score: Map<Num> = Map::new();
-        g_score.insert(start.clone(), 0);
+        g_score.insert(*start, 0);
         //let mut f_score: Map<Num> = Map::new();
         //f_score.insert(start, h(start));
 
-        while open_set.len() != 0 {
+        while !open_set.is_empty() {
             let current = open_set.pop().unwrap().0; //lowest_node(&open_set, &f_score);
             if current.x == goal.x && current.y == goal.y {
                 return reconstruct_path(came_from, current);
@@ -227,17 +227,7 @@ mod bfs {
             grid.get(origin.x, origin.y + 1).cloned(),
         ]
         .into_iter()
-        .filter_map(move |n| {
-            if let Some(n) = n {
-                if origin.elevation + 1 >= n.elevation {
-                    Some(n)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
+        .filter_map(move |n| n.filter(|&n| origin.elevation + 1 >= n.elevation))
     }
 
     fn reconstruct_path(grid: &Grid<Node>, end: Node) -> Vec<Node> {
@@ -260,14 +250,14 @@ mod bfs {
         let root = grid.get_mut(root.x, root.y).unwrap();
         root.parent = Some((root.x, root.y));
 
-        let mut q: VecDeque<Node> = [root.clone()].into();
+        let mut q: VecDeque<Node> = [*root].into();
         while let Some(current) = q.pop_front() {
             if current == goal {
                 return reconstruct_path(&grid, current);
             }
 
             for neighbor in get_adjacent(&grid, current) {
-                if let None = neighbor.parent {
+                if neighbor.parent.is_none() {
                     let neighbor =
                         grid.get_mut(neighbor.x, neighbor.y).unwrap();
                     neighbor.parent = Some((current.x, current.y));
@@ -282,7 +272,7 @@ mod bfs {
 
 use bfs::Node;
 
-fn input2nodes<'s>(input: &'s str) -> impl Iterator<Item = Node> + 's {
+fn input2nodes(input: &str) -> impl Iterator<Item = Node> + '_ {
     input.lines().enumerate().flat_map(|(y, l)| {
         l.chars().enumerate().map(move |(x, c)| {
             let elevation = match c {
@@ -296,7 +286,7 @@ fn input2nodes<'s>(input: &'s str) -> impl Iterator<Item = Node> + 's {
     })
 }
 
-fn find_start<'s>(input: &'s str) -> Node {
+fn find_start(input: &str) -> Node {
     input
         .lines()
         .enumerate()
@@ -312,7 +302,7 @@ fn find_start<'s>(input: &'s str) -> Node {
         .unwrap()
 }
 
-fn find_end<'s>(input: &'s str) -> Node {
+fn find_end(input: &str) -> Node {
     input
         .lines()
         .enumerate()

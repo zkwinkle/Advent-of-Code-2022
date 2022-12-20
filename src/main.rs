@@ -32,7 +32,7 @@ fn main() {
 
     if let Some(passes_opt) = args.bench {
         let passes = passes_opt.unwrap_or(100);
-        benchmarks(&INPUTS, &SOLUTIONS, passes)
+        benchmarks(&INPUTS, &SOLUTIONS, args.day, passes)
     } else {
         let day = match args.day {
             Some(day) => day,

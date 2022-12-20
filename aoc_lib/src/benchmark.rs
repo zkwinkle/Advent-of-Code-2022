@@ -9,6 +9,7 @@ use crate::tooling::{load_input, Solution};
 pub fn benchmarks(
     inputs: &[[&'static str; 2]],
     solutions: &[[Solution; 2]],
+    day_option: Option<usize>,
     passes: u32,
 ) {
     if cfg!(debug_assertions) {
@@ -17,8 +18,14 @@ pub fn benchmarks(
 
     let mut elapsed_total: Duration = Default::default();
     for (i, [f1, f2]) in solutions.iter().enumerate() {
-        let day = i + 1;
-        let data = || load_input(inputs, day, false);
+        let current_day = i + 1;
+        if let Some(day) = day_option {
+            if current_day != day {
+                continue;
+            }
+        }
+
+        let data = || load_input(inputs, current_day, false);
 
         let now = Instant::now();
         for _ in 0..passes {
@@ -32,9 +39,9 @@ pub fn benchmarks(
         let elapsed2 = now.elapsed();
         println!(
             "\n{}: {}\n{}: {}",
-            format!("day{day:02}/task1").bold(),
+            format!("day{current_day:02}/task1").bold(),
             format!("{:>10?}", elapsed1 / passes).green(),
-            format!("day{day:02}/task2").bold(),
+            format!("day{current_day:02}/task2").bold(),
             format!("{:>10?}", elapsed2 / passes).green(),
         );
 

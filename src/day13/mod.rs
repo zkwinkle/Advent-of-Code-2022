@@ -3,37 +3,35 @@ use std::{cmp::Ordering, fmt, str::FromStr, string::ParseError};
 use aoc_lib::tooling::SolutionResult;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum PacketData {
-    List(Vec<PacketData>),
+enum Packet {
+    List(Vec<Packet>),
     Integer(u32),
 }
 
-impl PartialOrd for PacketData {
+impl PartialOrd for Packet {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for PacketData {
+impl Ord for Packet {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (PacketData::List(l), i @ PacketData::Integer(_)) => {
+            (Packet::List(l), i @ Packet::Integer(_)) => {
                 l.cmp(&[i.clone()].into())
             }
-            (i @ PacketData::Integer(_), PacketData::List(l)) => {
-                vec![i.clone()].cmp(l)
-            }
+            (i @ Packet::Integer(_), Packet::List(l)) => vec![i.clone()].cmp(l),
 
-            (PacketData::List(l1), PacketData::List(l2)) => l1.cmp(l2),
-            (PacketData::Integer(i1), PacketData::Integer(i2)) => i1.cmp(i2),
+            (Packet::List(l1), Packet::List(l2)) => l1.cmp(l2),
+            (Packet::Integer(i1), Packet::Integer(i2)) => i1.cmp(i2),
         }
     }
 }
 
-impl fmt::Display for PacketData {
+impl fmt::Display for Packet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PacketData::List(vec) => {
+            Packet::List(vec) => {
                 write!(f, "[")?;
                 for (i, p) in vec.iter().enumerate() {
                     write!(f, "{}", p)?;
@@ -43,12 +41,12 @@ impl fmt::Display for PacketData {
                 }
                 write!(f, "]")
             }
-            PacketData::Integer(i) => write!(f, "{}", i),
+            Packet::Integer(i) => write!(f, "{}", i),
         }
     }
 }
 
-impl FromStr for PacketData {
+impl FromStr for Packet {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -90,25 +88,21 @@ impl FromStr for PacketData {
                 }
             }
 
-            Ok(PacketData::List(list))
+            Ok(Packet::List(list))
         } else {
-            Ok(PacketData::Integer(s.trim_matches(',').parse().unwrap()))
+            Ok(Packet::Integer(s.trim_matches(',').parse().unwrap()))
         }
     }
 }
 
-fn parse(input: &str) -> Vec<[PacketData; 2]> {
-    input
+pub fn task1(input: &str) -> SolutionResult {
+    let pairs: Vec<[Packet; 2]> = input
         .split("\n\n")
         .map(|lines: &str| {
             let l = lines.split_once('\n').unwrap();
             [l.0.parse().unwrap(), l.1.parse().unwrap()]
         })
-        .collect()
-}
-
-pub fn task1(input: &str) -> SolutionResult {
-    let pairs: Vec<[PacketData; 2]> = parse(input);
+        .collect();
 
     let mut res = 0;
     for (i, pair) in pairs.iter().enumerate() {
@@ -125,4 +119,27 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(res)
 }
 
-pub fn task2(input: &str) -> SolutionResult { SolutionResult::Unsigned(0) }
+pub fn task2(input: &str) -> SolutionResult {
+    let mut packets: Vec<Packet> = input
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l: &str| l.parse().unwrap())
+        .collect();
+
+    // Divider packets
+    let divider_2 = Packet::List(vec![Packet::List(vec![Packet::Integer(2)])]);
+    let divider_6 = Packet::List(vec![Packet::List(vec![Packet::Integer(6)])]);
+    packets.push(divider_2.clone());
+    packets.push(divider_6.clone());
+
+    packets.sort();
+
+    let mut res = 1;
+    for (i, packet) in packets.iter().enumerate() {
+        if *packet == divider_2 || *packet == divider_6 {
+            res *= i + 1;
+        }
+    }
+
+    SolutionResult::Unsigned(res)
+}

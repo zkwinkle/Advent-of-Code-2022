@@ -1,4 +1,4 @@
-use aoc_lib::{collections::grid::Grid, tooling::SolutionResult};
+use aoc_lib::{structs::grid::Grid, tooling::SolutionResult};
 
 type Num = u32;
 

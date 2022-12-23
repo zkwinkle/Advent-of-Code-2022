@@ -4,7 +4,7 @@ use std::{
 };
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-struct Position<T> {
+pub struct Position<T> {
     x: T,
     y: T,
 }

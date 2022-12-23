@@ -1,4 +1,5 @@
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
+use thiserror::Error;
 
 /// 2D rectangular grid structure
 
@@ -9,9 +10,34 @@ pub struct Grid<T> {
     columns: usize,
 }
 
+#[derive(Error, Debug)]
+#[error("vec given was of size {0} which isn't wholly divisble by the width given {1} ({0}/{1}={2:.1})", .vec_length, .width_given, (*.vec_length as f64) / (*.width_given as f64))]
+pub struct WrongDimensionsError {
+    vec_length: usize,
+    width_given: usize,
+}
+
 fn xy2i(columns: usize, x: usize, y: usize) -> usize { y * columns + x }
 
 impl<T> Grid<T> {
+    pub fn from_vec(
+        vec: Vec<T>,
+        columns: usize,
+    ) -> Result<Grid<T>, WrongDimensionsError> {
+        if (vec.len() % columns) == 0 {
+            Ok(Grid {
+                rows: vec.len() / columns,
+                elements: vec,
+                columns,
+            })
+        } else {
+            Err(WrongDimensionsError {
+                width_given: columns,
+                vec_length: vec.len(),
+            })
+        }
+    }
+
     pub fn rows(&self) -> usize { self.rows }
 
     pub fn columns(&self) -> usize { self.columns }
@@ -47,10 +73,56 @@ impl<T> Grid<T> {
     }
 }
 
+impl<T: Clone> Grid<T> {
+    pub fn fill(&mut self, value: T) { self.elements.fill(value); }
+
+    pub fn with_val(val: T, rows: usize, columns: usize) -> Grid<T> {
+        Grid {
+            elements: vec![val; rows * columns],
+            columns,
+            rows,
+        }
+    }
+}
+
+impl<T: Default> Grid<T> {
+    pub fn new(rows: usize, columns: usize) -> Grid<T> {
+        let mut elements = Vec::new();
+        elements.resize_with(rows * columns, Default::default);
+        Grid {
+            elements,
+            columns,
+            rows,
+        }
+    }
+}
+
 impl<T> Index<(usize, usize)> for Grid<T> {
     type Output = T;
 
     fn index(&self, coords: (usize, usize)) -> &Self::Output {
         &self.elements[xy2i(self.columns, coords.0, coords.1)]
+    }
+}
+
+impl<T> Index<usize> for Grid<T> {
+    type Output = [T];
+
+    fn index(&self, row: usize) -> &Self::Output {
+        let row_start = row * self.columns;
+        &self.elements[row_start..row_start + (self.columns - 1)]
+    }
+}
+
+impl<T> IndexMut<(usize, usize)> for Grid<T> {
+    fn index_mut(&mut self, coords: (usize, usize)) -> &mut Self::Output {
+        &mut self.elements[xy2i(self.columns, coords.0, coords.1)]
+    }
+}
+
+impl<T> IndexMut<usize> for Grid<T> {
+    fn index_mut(&mut self, row: usize) -> &mut Self::Output {
+        let row_start = row * self.columns;
+        &mut self.elements[row_start..row_start + (self.columns - 1)]
     }
 }

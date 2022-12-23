@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 seq-macro = "0.3.1"
 colored = "2.0.0"
+thiserror = "1.0.38"

@@ -5,12 +5,17 @@ use aoc_lib::{
     tooling::SolutionResult,
 };
 
-const MIN_X: usize = 450;
-const MAX_X: usize = 550;
+const MIN_X: usize = 300;
+const MAX_X: usize = 700;
 const MIN_Y: usize = 0;
 const MAX_Y: usize = 200;
+// For drawing on testinput
+//const MIN_X: usize = 480;
+//const MAX_X: usize = 520;
+//const MIN_Y: usize = 0;
+//const MAX_Y: usize = 12;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 enum Tile {
     Sand,
     Air,
@@ -201,4 +206,63 @@ pub fn task1(input: &str) -> SolutionResult {
     SolutionResult::Unsigned(counter)
 }
 
-pub fn task2(input: &str) -> SolutionResult { SolutionResult::Unsigned(0) }
+fn fill_pyramid(
+    grid: &mut Grid<Tile>,
+    spawn_position: Position<usize>,
+    floor_y: usize,
+) -> usize {
+    let mut count = 1;
+    grid[spawn_position] = Tile::Sand;
+    let mid = spawn_position.x;
+
+    for row in (spawn_position.y + 1)..floor_y {
+        let width: usize = (row + 1) * 2 - 1;
+        let offset: usize = width / 2;
+        for col in (mid - offset)..=(mid + offset) {
+            match (
+                grid.get(col - 1, row - 1),
+                grid.get(col, row - 1),
+                grid.get(col + 1, row - 1),
+            ) {
+                (Some(Tile::Sand), ..)
+                | (_, Some(Tile::Sand), _)
+                | (_, _, Some(Tile::Sand)) => {
+                    if grid[row][col] == Tile::Air {
+                        grid[row][col] = Tile::Sand;
+                        count += 1;
+                    }
+                }
+                _ => (),
+            }
+        }
+    }
+    count
+}
+
+pub fn task2(input: &str) -> SolutionResult {
+    let mut grid: Grid<Tile> = parse(input);
+
+    let max_y = grid.iter_rows().enumerate().fold(0, |max_y, (i, row)| {
+        if row.contains(&Tile::Wall) {
+            i
+        } else {
+            max_y
+        }
+    });
+
+    if grid.columns() <= ((max_y + 2) * 2 - 1) {
+        panic!("Not enough columns for correct simulation of part2, current columns are {} but need {}", grid.columns(), ((max_y+2)*2 - 1))
+    }
+
+    // Unnecessary, uncomment if you wanna draw floor
+    //let floor = &mut grid[max_y + 2];
+    //floor.fill(Tile::Wall);
+
+    let spawn_position = Position::new(500, 0) - Position::new(MIN_X, MIN_Y);
+
+    let counter = fill_pyramid(&mut grid, spawn_position, max_y + 2);
+
+    //draw_grid(&grid);
+
+    SolutionResult::Unsigned(counter)
+}

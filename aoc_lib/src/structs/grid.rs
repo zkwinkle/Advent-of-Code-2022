@@ -1,5 +1,5 @@
 use std::{
-    ops::{Index, IndexMut},
+    ops::{Bound, Index, IndexMut, RangeBounds},
     slice::{Chunks, ChunksMut, Iter, IterMut},
 };
 use thiserror::Error;
@@ -88,6 +88,52 @@ impl<T> Grid<T> {
 
     pub fn iter_mut_rows(&mut self) -> ChunksMut<'_, T> {
         self.elements.chunks_mut(self.rows)
+    }
+
+    pub fn remove_rows<R: RangeBounds<usize>>(&mut self, range: R) {
+        let row_start_inclusive = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Included(&r) => r,
+            Bound::Excluded(&r) => r + 1,
+        };
+        let row_end_exclusive = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Included(&r) => r + 1,
+            Bound::Excluded(&r) => r,
+        };
+
+        self.rows -= row_end_exclusive - row_start_inclusive;
+
+        let start_inclusive = row_start_inclusive * self.columns;
+        let end_exclusive = row_end_exclusive * self.rows;
+
+        self.elements.drain(start_inclusive..end_exclusive);
+    }
+
+    /// The performance of removing columns is much worse than that of removing
+    /// rows (since columns aren't contiguous in memory). Consider reorganizing
+    /// your data such that you can manage only calling [`remove_rows`].
+    ///
+    /// [`remove_rows`]: Grid::remove_rows
+    pub fn remove_cols<R: RangeBounds<usize>>(&mut self, range: R) {
+        let col_start_inclusive = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Included(&c) => c,
+            Bound::Excluded(&c) => c + 1,
+        };
+        let col_end_exclusive = match range.start_bound() {
+            Bound::Unbounded => 0,
+            Bound::Included(&c) => c + 1,
+            Bound::Excluded(&c) => c,
+        };
+
+        for row in (0..self.rows).rev() {
+            for col in col_start_inclusive..col_end_exclusive {
+                self.elements.remove(xy2i(col, row, self.columns));
+            }
+        }
+
+        self.columns -= col_end_exclusive - col_start_inclusive;
     }
 }
 

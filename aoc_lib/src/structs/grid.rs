@@ -1,5 +1,10 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    ops::{Index, IndexMut},
+    slice::{Chunks, ChunksMut, Iter, IterMut},
+};
 use thiserror::Error;
+
+use super::position::Position;
 
 /// 2D rectangular grid structure
 
@@ -50,7 +55,7 @@ impl<T> Grid<T> {
         self.elements.get_mut(xy2i(self.columns, x, y))
     }
 
-    pub fn parse_grid<'a, I>(
+    pub fn parse_grid_with<'a, I>(
         input: &'a str,
         map_fn: impl Fn(&'a str) -> I,
     ) -> Grid<T>
@@ -70,6 +75,19 @@ impl<T> Grid<T> {
             rows,
             columns,
         }
+    }
+
+    pub fn iter_all(&self) -> Iter<'_, T> { self.elements.iter() }
+    pub fn iter_mut_all(&mut self) -> IterMut<'_, T> {
+        self.elements.iter_mut()
+    }
+
+    pub fn iter_rows(&self) -> Chunks<'_, T> {
+        self.elements.chunks(self.columns)
+    }
+
+    pub fn iter_mut_rows(&mut self) -> ChunksMut<'_, T> {
+        self.elements.chunks_mut(self.rows)
     }
 }
 
@@ -105,6 +123,14 @@ impl<T> Index<(usize, usize)> for Grid<T> {
     }
 }
 
+impl<T> Index<Position<usize>> for Grid<T> {
+    type Output = T;
+
+    fn index(&self, pos: Position<usize>) -> &Self::Output {
+        &self.elements[xy2i(self.columns, pos.x, pos.y)]
+    }
+}
+
 impl<T> Index<usize> for Grid<T> {
     type Output = [T];
 
@@ -117,6 +143,12 @@ impl<T> Index<usize> for Grid<T> {
 impl<T> IndexMut<(usize, usize)> for Grid<T> {
     fn index_mut(&mut self, coords: (usize, usize)) -> &mut Self::Output {
         &mut self.elements[xy2i(self.columns, coords.0, coords.1)]
+    }
+}
+
+impl<T> IndexMut<Position<usize>> for Grid<T> {
+    fn index_mut(&mut self, pos: Position<usize>) -> &mut Self::Output {
+        &mut self.elements[xy2i(self.columns, pos.x, pos.y)]
     }
 }
 

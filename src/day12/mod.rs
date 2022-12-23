@@ -138,7 +138,7 @@ fn find_end(input: &str) -> Node {
 }
 
 pub fn task1(input: &str) -> SolutionResult {
-    let grid: Grid<Node> = Grid::parse_grid(input, input2nodes);
+    let grid: Grid<Node> = Grid::parse_grid_with(input, input2nodes);
     let start = find_start(input);
 
     let end = find_end(input);
@@ -178,7 +178,7 @@ fn input2nodes_inverse(input: &str) -> impl Iterator<Item = Node> + '_ {
 }
 
 pub fn task2(input: &str) -> SolutionResult {
-    let grid: Grid<Node> = Grid::parse_grid(input, input2nodes_inverse);
+    let grid: Grid<Node> = Grid::parse_grid_with(input, input2nodes_inverse);
 
     let start = find_end(input);
     let finish_fn = |n: Node| n.elevation == 'z' as Num;

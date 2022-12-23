@@ -5,8 +5,8 @@ use std::{
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct Position<T> {
-    x: T,
-    y: T,
+    pub x: T,
+    pub y: T,
 }
 
 impl<T: fmt::Display> fmt::Display for Position<T> {
@@ -38,7 +38,13 @@ impl<T: Add<Output = T>> Add for Position<T> {
 }
 
 impl<T> Position<T> {
-    fn tuple(self) -> (T, T) { (self.x, self.y) }
+    pub fn new(x: T, y: T) -> Position<T> { Position { x, y } }
+}
 
-    fn new(x: T, y: T) -> Position<T> { Position { x, y } }
+impl<T> From<(T, T)> for Position<T> {
+    fn from(tuple: (T, T)) -> Position<T> { Position::new(tuple.0, tuple.1) }
+}
+
+impl<T> From<Position<T>> for (T, T) {
+    fn from(p: Position<T>) -> (T, T) { (p.x, p.y) }
 }
